@@ -1,15 +1,5 @@
 module Mapattack; module ArcGIS
 
-  module HTTPClientActor
-    def hc
-      @hc ||= HTTPClient.new
-      @hc
-    end
-    def post url, params = {}
-      JSON.parse hc.post(url, params.merge(f: 'json')).body
-    end
-  end
-
   class DeviceRegstrar
     include Celluloid
     include HTTPClientActor
@@ -26,8 +16,14 @@ module Mapattack; module ArcGIS
     include Celluloid
     include HTTPClientActor
 
-    def update
-      raise NotImplementedError
+    URL = 'https://www.arcgis.com/sharing/oauth2/apps/%s/devices/%s/update'
+
+    def update ago_data, params
+      post URL % [CONFIG[:ago_client_id], ago_data['device_id']],
+        token: ago_data['access_token'],
+        apnsProdToken: params[:apns_prod_token],
+        apnsSandboxToken: params[:apns_sandbox_token],
+        gcmRegistrationId: params[:gcm_registration_id]
     end
 
   end
@@ -43,4 +39,3 @@ module Mapattack; module ArcGIS
   end
 
 end; end
-

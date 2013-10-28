@@ -3,20 +3,35 @@ module Mapattack
     class Responder
       include Celluloid::Logger
 
-      GET =  'GET'.freeze
-      POST = 'POST'.freeze
+      EMPTY_JSON = '{}'.freeze
 
       DEFAULT_HEADERS = {
         'Content-Type' => 'application/json'
       }
 
+      def self.symhash
+        Hash.new {|hash,key| hash[key.to_s] if Symbol === key }
+      end
+
       attr_writer :connection
+
+      def initialize method, &block
+        @method = method
+
+      end
 
       def request= request, do_respond = true
         @params = nil
         @request = request
-        @body = handle_request || {}
-        respond if do_respond
+        begin
+          @body = handle_request || {}
+          respond if do_respond
+        rescue => e
+          error e.message
+          # e.backtrace.each {|t| error t}
+          ::STDERR.puts e.backtrace
+          @connection.respond :internal_server_error, DEFAULT_HEADERS, {error: 'server error'}.to_json
+        end
       end
 
       def handle_request
@@ -33,7 +48,7 @@ module Mapattack
                       end
                     when POST
                       body = @request.body.to_s
-                      body = '{}' if body.empty?
+                      body = EMPTY_JSON if body.empty?
                       Responder.symhash.merge! JSON.parse body
                     end
         @params
@@ -43,16 +58,28 @@ module Mapattack
         @connection.respond :ok, (headers || DEFAULT_HEADERS), @body.to_json
       end
 
-      def self.symhash
-        Hash.new {|hash,key| hash[key.to_s] if Symbol === key }
+      def require_access_token &block
+        if params[:access_token]
+          ago_data = redis.get REDIS_DEVICE_TOKENS % params[:access_token]
+          if ago_data
+            @ago_data = Responder.symhash.merge! JSON.parse ago_data
+            profile = JSON.parse redis.get REDIS_DEVICE_PROFILE % ago_data['device_id']
+            @profile = Responder.symhash.merge! profile
+            yield
+          else
+            { error: "no AGO oauth data found for '#{params[:access_token]}'" }
+          end
+        else
+          { error: 'no access_token param' }
+        end
       end
 
       def redis
-        @redis ||= Redis.new
+        @redis ||= RedisPool.new
         @redis
       end
 
-      class Redis
+      class RedisPool
         def method_missing meth, *args
           Mapattack.redis {|r| r.__send__ meth, *args}
         end

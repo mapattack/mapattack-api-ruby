@@ -16,16 +16,12 @@ $:.unshift File.expand_path '..', __FILE__
 require 'mapattack/udp/service'
 require 'mapattack/udp/handler'
 
-require 'mapattack/webserver'
-require 'mapattack/arcgis'
-require 'mapattack/http/responder'
-require 'mapattack/http/device/register'
-
 module Mapattack
 
   CONFIG = YAML.load_file File.expand_path '../../config.yml', __FILE__
 
   @udp = Mapattack::UDP::Service.new
+  def self.udp; @udp; end
 
 
 
@@ -33,6 +29,8 @@ module Mapattack
     timeout: 5,
     size: 16
   }
+  REDIS_DEVICE_TOKENS =  'device:tokens:%s'.freeze
+  REDIS_DEVICE_PROFILE = 'device:profile:%s'.freeze
 
   def self.redis &block
     @redis ||= ConnectionPool.new REDIS_POOL_CONF do
@@ -49,6 +47,39 @@ module Mapattack
     Array.new(length).map {ID_POSSIBLE[rand ID_POSSIBLE.length]}.join
   end
 
+
+
+  module HTTPClientActor
+
+    def hc
+      @hc ||= HTTPClient.new
+      @hc
+    end
+
+    def get url, params = {}
+      request :get, url, params
+    end
+
+    def post url, params = {}
+      request :post, url, params
+    end
+
+    def request meth, url, params
+      JSON.parse hc.__send__(meth, url, params.merge(f: 'json')).body
+    end
+    private :request
+
+  end
+
 end
+
+require 'mapattack/arcgis'
+require 'mapattack/webserver'
+require 'mapattack/http/responder'
+require 'mapattack/http/device/register'
+require 'mapattack/http/device/register_push'
+require 'mapattack/http/device/info'
+require 'mapattack/http/board/list'
+
 
 Mapattack::Webserver.run unless $0 == 'irb'

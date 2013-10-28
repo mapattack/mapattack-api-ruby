@@ -2,6 +2,9 @@ module Mapattack
   class Webserver < Reel::Server
     include Celluloid::Logger
 
+    GET =  'GET'.freeze
+    POST = 'POST'.freeze
+
     def initialize host = '127.0.0.1', port = 8080
       info "Mapattack::Webserver#initialize on #{host}:#{port}"
       create_responders
@@ -9,12 +12,11 @@ module Mapattack
     end
 
     def on_connection connection
-      while request = connection.request
-        case request
-        when Reel::Request
+      connection.each_request do |request|
+        if request.websocket?
+          route_websocket request.websocket
+        else
           route_request connection, request
-        when Reel::WebSocket
-          raise NotImplementedError
         end
       end
     end
@@ -37,9 +39,16 @@ module Mapattack
 
     end
 
+    def route_websocket websocket
+      Mapattack.udp << websocket
+    end
+
     def create_responders
       @responders = {
-        '/device/register' => Mapattack::HTTP::Device::Register.new
+        '/device/register' =>      Mapattack::HTTP::Device::Register.new,
+        '/device/register_push' => Mapattack::HTTP::Device::RegisterPush.new,
+        '/device/info' =>          Mapattack::HTTP::Device::Info.new,
+        '/board/list' =>           Mapattack::HTTP::Board::List.new
       }
     end
 

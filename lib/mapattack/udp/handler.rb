@@ -8,8 +8,7 @@ module Mapattack
       end
 
       def handle_data data, server_inet_addr
-        data = JSON.parse data
-        jj data
+        @service.websockets.each {|ws| ws << data}
       end
 
       def build_location_update data

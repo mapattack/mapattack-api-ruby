@@ -2,13 +2,20 @@ module Mapattack; module HTTP; module Device
   class Register < Responder
 
     def handle_request
+
+      # without an "access_token"...
+      #
       if params[:access_token].nil? or params[:access_token].empty?
+
+        # create token, register device, stash in redis
+        #
         create_new_ago_device
+
       else
 
         # get AGO oauth data from redis
         #
-        dts = JSON.parse redis.get 'device:tokens:' + params[:access_token] rescue nil
+        dts = JSON.parse redis.get REDIS_DEVICE_TOKENS % params[:access_token] rescue nil
 
         # if we have everything...
         #
@@ -46,13 +53,12 @@ module Mapattack; module HTTP; module Device
       # register for AGO oauth data and save it
       #
       dts = Mapattack::ArcGIS.device_registrar_pool.future.register.value
-      binding.pry
       dts = {
         device_id: dts['device']['deviceId'],
         access_token: dts['deviceToken']['access_token'],
         refresh_token: dts['deviceToken']['refresh_token']
       }
-      redis.set 'device:tokens:' + at, dts.to_json
+      redis.set (REDIS_DEVICE_TOKENS % at), dts.to_json
 
       # save profile info
       #
@@ -73,7 +79,7 @@ module Mapattack; module HTTP; module Device
     end
 
     def set_profile device_id
-      redis.set 'device:profile:' + device_id, profile_json
+      redis.set (REDIS_DEVICE_PROFILE % device_id), profile_json
     end
 
   end
