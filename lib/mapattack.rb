@@ -5,8 +5,8 @@ require 'pry'
 require 'pry-nav'
 require 'celluloid'
 require 'celluloid/io'
-require 'reel'
 require 'connection_pool'
+require 'angelo'
 require 'redis'
 require 'celluloid/redis'
 require 'celluloid/autostart'
@@ -74,12 +74,7 @@ module Mapattack
 end
 
 require 'mapattack/arcgis'
+require 'mapattack/webserver/helpers'
 require 'mapattack/webserver'
-require 'mapattack/http/responder'
-require 'mapattack/http/device/register'
-require 'mapattack/http/device/register_push'
-require 'mapattack/http/device/info'
-require 'mapattack/http/board/list'
-
 
 Mapattack::Webserver.run unless $0 == 'irb'

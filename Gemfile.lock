@@ -1,6 +1,8 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    angelo (0.0.5)
+      reel
     celluloid (0.15.2)
       timers (~> 1.1.0)
     celluloid-io (0.15.0)
@@ -39,10 +41,9 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  angelo
   celluloid-redis
   connection_pool
   httpclient
   pry
   pry-nav
-  redis
-  reel

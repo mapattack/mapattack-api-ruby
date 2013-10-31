@@ -1,55 +1,79 @@
 module Mapattack
-  class Webserver < Reel::Server
-    include Celluloid::Logger
+  class Webserver < Angelo::Base
+    include Helpers
 
-    GET =  'GET'.freeze
-    POST = 'POST'.freeze
+    content_type :json
 
-    def initialize host = '127.0.0.1', port = 8080
-      info "Mapattack::Webserver#initialize on #{host}:#{port}"
-      create_responders
-      super host, port, &method(:on_connection)
-    end
+    post '/device/register' do
 
-    def on_connection connection
-      connection.each_request do |request|
-        if request.websocket?
-          route_websocket request.websocket
-        else
-          route_request connection, request
-        end
-      end
-    end
+      # without an "access_token"...
+      #
+      if params[:access_token].nil? or params[:access_token].empty?
 
-    def route_request connection, request
+        # create token, register device, stash in redis
+        #
+        create_new_ago_device
 
-      case request.path
-      when '/ping'
-        connection.respond :ok, {'Content-Type' => 'text/plain'}, 'pong'
       else
 
-        if @responders[request.path]
-          @responders[request.path].connection = connection
-          @responders[request.path].request = request
+        # get AGO oauth data from redis
+        #
+        dts = JSON.parse redis.get REDIS_DEVICE_TOKENS % params[:access_token] rescue nil
+
+        # if we have everything...
+        #
+        if dts and dts['device_id']
+
+          # update profile
+          #
+          set_profile dts['device_id']
+
+          # respond with id and "access_token"
+          #
+          {
+            device_id: dts['device_id'],
+            access_token: params[:access_token]
+          }
+
+
         else
-          connection.respond :not_found
+
+          # ain't nobody got time for that
+          #
+          create_new_ago_device
+
         end
 
       end
-
     end
 
-    def route_websocket websocket
-      Mapattack.udp << websocket
+    post '/device/register_push' do
+      require_access_token do
+        Mapattack::Arcgis.device_updater_pool.async.update ago_data, params
+      end
     end
 
-    def create_responders
-      @responders = {
-        '/device/register' =>      Mapattack::HTTP::Device::Register.new,
-        '/device/register_push' => Mapattack::HTTP::Device::RegisterPush.new,
-        '/device/info' =>          Mapattack::HTTP::Device::Info.new,
-        '/board/list' =>           Mapattack::HTTP::Board::List.new
-      }
+    get '/device/info' do
+      require_access_token do
+        {
+          device_id: @ago_data[:device_id],
+          name: @profile[:name],
+          access_token: @ago_data[:access_token]
+        }
+      end
+    end
+
+    # ---
+
+    def redis
+      @redis ||= RedisPool.new
+      @redis
+    end
+
+    class RedisPool
+      def method_missing meth, *args
+        Mapattack.redis {|r| r.__send__ meth, *args}
+      end
     end
 
   end
