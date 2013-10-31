@@ -49,7 +49,7 @@ module Mapattack
 
     post '/device/register_push' do
       require_access_token do
-        Mapattack::Arcgis.device_updater_pool.async.update ago_data, params
+        Mapattack::Arcgis.device_updater_pool.async.update @ago_data, params
       end
     end
 
@@ -61,6 +61,10 @@ module Mapattack
           access_token: @ago_data[:access_token]
         }
       end
+    end
+
+    socket '/ws' do |s|
+      WebsocketHandler.new s
     end
 
     # ---

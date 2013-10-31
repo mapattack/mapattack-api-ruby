@@ -15,11 +15,6 @@ module Mapattack
         async.listen
       end
 
-      def << websocket
-        @websockets ||= []
-        @websockets << websocket
-      end
-
       def listen
         loop {
           @handler_pool.async.handle_data *@socket.recvfrom(RECV_MAXLEN)

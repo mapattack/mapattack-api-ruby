@@ -8,7 +8,7 @@ module Mapattack
       end
 
       def handle_data data, server_inet_addr
-        @service.websockets.each {|ws| ws << data}
+        Mapattack.redis {|r| r.publish REDIS_GAME_CHANNEL % 'foo', data}
       end
 
       def build_location_update data
