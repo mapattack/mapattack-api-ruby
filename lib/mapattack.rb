@@ -1,15 +1,9 @@
 require 'json'
 require 'yaml'
 require 'httpclient'
-require 'pry'
-require 'pry-nav'
-require 'celluloid'
-require 'celluloid/io'
-require 'connection_pool'
-require 'angelo'
-require 'redis'
-require 'celluloid/redis'
-require 'celluloid/autostart'
+
+require 'bundler'
+Bundler.require
 
 $:.unshift File.expand_path '..', __FILE__
 
@@ -17,6 +11,10 @@ require 'mapattack/udp/service'
 require 'mapattack/udp/handler'
 
 module Mapattack
+
+  BOARD_ID_REGEX = /^board:([^:]+)$/
+  GAME_ID_REGEX = /^game:([^:]+)$/
+  COIN_ID_REGEX = /^coin:([^:]+)$/
 
   CONFIG = YAML.load_file File.expand_path '../../config.yml', __FILE__
 
@@ -42,6 +40,13 @@ module Mapattack
 
 
 
+  def self.geotrigger
+    @geotrigger ||= ::ArcGIS::GT::Application.new client_id: CONFIG[:ago_client_id],
+                                                  client_secret: CONFIG[:ago_client_secret]
+  end
+
+
+
   ID_POSSIBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.freeze
 
   def self.generate_id length
@@ -49,28 +54,6 @@ module Mapattack
   end
 
 
-
-  module HTTPClientActor
-
-    def hc
-      @hc ||= HTTPClient.new
-      @hc
-    end
-
-    def get url, params = {}
-      request :get, url, params
-    end
-
-    def post url, params = {}
-      request :post, url, params
-    end
-
-    def request meth, url, params
-      JSON.parse hc.__send__(meth, url, params.merge(f: 'json')).body
-    end
-    private :request
-
-  end
 
 end
 
