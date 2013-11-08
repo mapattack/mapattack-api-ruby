@@ -1,13 +1,14 @@
 module Mapattack::Webserver::Board
+
+  BOARD_ID_GAME_KEY =        'board:%s:game'.freeze
+  GAME_ID_RED_KEY =          'game:%s:red'.freeze
+  GAME_ID_BLUE_KEY =         'game:%s:blue'.freeze
+  GAME_ID_RED_MEMBERS_KEY =  'game:%s:red:members'.freeze
+  GAME_ID_BLUE_MEMBERS_KEY = 'game:%s:blue:members'.freeze
+  GAME_ID_ACTIVE_KEY =       'game:%s:active'.freeze
+
   def self.included base
     base.class_eval do
-
-      BOARD_ID_GAME_KEY =        'board:%s:game'.freeze
-      GAME_ID_RED_KEY =          'game:%s:red'.freeze
-      GAME_ID_BLUE_KEY =         'game:%s:blue'.freeze
-      GAME_ID_RED_MEMBERS_KEY =  'game:%s:red:members'.freeze
-      GAME_ID_BLUE_MEMBERS_KEY = 'game:%s:blue:members'.freeze
-      GAME_ID_ACTIVE_KEY =       'game:%s:active'.freeze
 
       get '/board/list' do
 
@@ -36,9 +37,10 @@ module Mapattack::Webserver::Board
 
             # find the id of the board by parsing the 'board:xxx' tag
             #
-            trigger.data['tags'].detect {|t| m = BOARD_ID_REGEX.match t}
-            board_id = m[1]
-            m = nil
+            match = nil
+            trigger.data['tags'].detect {|t| match = Mapattack::BOARD_ID_REGEX.match t}
+            board_id = match[1] unless match.nil?
+            next unless board_id
 
             # board data
             #
@@ -51,7 +53,7 @@ module Mapattack::Webserver::Board
 
             # search redis for a currently running game
             #
-            if game_id = redis.get BOARD_ID_GAME_KEY % board_id
+            if game_id = redis.get(BOARD_ID_GAME_KEY % board_id)
 
               stats = redis.multi do |r|
                 r.hvals GAME_ID_RED_KEY % game_id
@@ -82,7 +84,7 @@ module Mapattack::Webserver::Board
 
         end
 
-        { boards: [] }
+        { boards: boards }
       end
 
     end
