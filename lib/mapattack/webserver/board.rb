@@ -16,6 +16,10 @@ module Mapattack::Webserver::Board
 
         if !params[:latitude].nil?
 
+          # make a location point object
+          #
+          point = Mapattack.rgeo.point params[:longitude], params[:latitude]
+
           # query geotrigger api for triggers with tag 'board' nearby
           #
           Mapattack.geotrigger.triggers({
@@ -27,13 +31,9 @@ module Mapattack::Webserver::Board
             }
           }).each do |trigger|
 
-            # make a location point object
-            #
-            point = nil # todo
-
             # make the polygon object and determine closest point on it to location
             #
-            polygon = nil # todo
+            polygon = Mapattack.rgeo.polygon
 
             # find the id of the board by parsing the 'board:xxx' tag
             #
@@ -85,6 +85,10 @@ module Mapattack::Webserver::Board
         end
 
         { boards: boards }
+      end
+
+      post '/board/new' do
+        { board_id: Mapattack.generate_id }
       end
 
     end

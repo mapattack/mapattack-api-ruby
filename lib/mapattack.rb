@@ -21,6 +21,9 @@ module Mapattack
   @udp = Mapattack::UDP::Service.new
   def self.udp; @udp; end
 
+  @rgeo = ::RGeo::Geographic.spherical_factory srid: 4326, buffer_resolution: 8
+  def self.rgeo; if block_given?; yield @rgeo; else; @rgeo; end; end
+
 
 
   REDIS_POOL_CONF = {
