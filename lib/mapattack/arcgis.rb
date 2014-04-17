@@ -3,7 +3,8 @@ module Mapattack; module ArcGIS
   module HTTPClientActor
 
     def self.included base
-      base.__send__ :include, Celluloid
+      # base.__send__ :include, Celluloid
+      base.__send__ :include, Celluloid::IO
     end
 
     def hc
@@ -29,7 +30,7 @@ module Mapattack; module ArcGIS
   class DeviceRegstrar
     include HTTPClientActor
 
-    URL = 'https://www.arcgis.com/sharing/oauth2/registerDevice'.freeze
+    URL = 'https://www.arcgis.com/sharing/oauth2/registerDevice'
 
     def register
       post URL, client_id: Mapattack::CONFIG[:ago_client_id]
@@ -53,13 +54,13 @@ module Mapattack; module ArcGIS
   end
 
   def self.device_registrar_pool
-    @device_registrar_pool ||= DeviceRegstrar.pool
-    @device_registrar_pool
+    # @device_registrar_pool ||= DeviceRegstrar.pool
+    @device_registrar_pool ||= DeviceRegstrar.new
   end
 
   def self.device_updater_pool
-    @device_updater_pool ||= DeviceUpdater.pool
-    @device_updater_pool
+    # @device_updater_pool ||= DeviceUpdater.pool
+    @device_updater_pool ||= DeviceUpdater.new
   end
 
 end; end

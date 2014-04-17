@@ -1,4 +1,3 @@
-
 module Mapattack
   class Webserver < Angelo::Base
     include Helpers
@@ -12,7 +11,7 @@ module Mapattack
     content_type :json
 
     socket '/ws' do |s|
-      WebsocketHandler.new s
+      # WebsocketHandler.new s
     end
 
     # ---

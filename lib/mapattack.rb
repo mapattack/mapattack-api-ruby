@@ -30,9 +30,9 @@ module Mapattack
     timeout: 5,
     size: 16
   }
-  REDIS_DEVICE_TOKENS =  'device:tokens:%s'.freeze
-  REDIS_DEVICE_PROFILE = 'device:profile:%s'.freeze
-  REDIS_GAME_CHANNEL = 'game:%s'.freeze
+  REDIS_DEVICE_TOKENS =  'device:tokens:%s'
+  REDIS_DEVICE_PROFILE = 'device:profile:%s'
+  REDIS_GAME_CHANNEL = 'game:%s'
 
   def self.redis &block
     @redis ||= ConnectionPool.new REDIS_POOL_CONF do
@@ -62,7 +62,7 @@ end
 
 require 'mapattack/arcgis'
 require 'mapattack/webserver/helpers'
-require 'mapattack/webserver/websocket_handler'
+# require 'mapattack/webserver/websocket_handler'
 require 'mapattack/webserver'
 
 Mapattack::Webserver.run unless $0 == 'irb'
