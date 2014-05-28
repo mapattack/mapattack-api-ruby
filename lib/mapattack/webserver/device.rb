@@ -47,7 +47,7 @@ module Mapattack::Webserver::Device
 
       post '/device/register_push' do
         require_access_token do
-          Mapattack::Arcgis.device_updater_pool.async.update @ago_data, params
+          Mapattack.arcgis.async.update @ago_data, params
         end
       end
 

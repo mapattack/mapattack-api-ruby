@@ -9,7 +9,7 @@ module Mapattack
 
       # register for AGO oauth data and save it
       #
-      dts = Mapattack::ArcGIS.device_registrar_pool.future.register.value
+      dts = Mapattack.arcgis.register
       dts = {
         device_id: dts['device']['deviceId'],
         access_token: dts['deviceToken']['access_token'],

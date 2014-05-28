@@ -18,7 +18,7 @@ module Mapattack::Webserver::Board
 
           # make a location point object
           #
-          point = Mapattack.rgeo.point params[:longitude], params[:latitude]
+          point = Terraformer::Point.new params[:longitude], params[:latitude]
 
           # query geotrigger api for triggers with tag 'board' nearby
           #
@@ -33,7 +33,7 @@ module Mapattack::Webserver::Board
 
             # make the polygon object and determine closest point on it to location
             #
-            polygon = Mapattack.rgeo.polygon
+            polygon = Terraformer.parse trigger.condition['geo']['geojson']
 
             # find the id of the board by parsing the 'board:xxx' tag
             #
@@ -47,8 +47,8 @@ module Mapattack::Webserver::Board
             board = {
               board_id: board_id,
               name: trigger.properties['title'] || "Untitled Board",
-              distance: nil, # todo
-              bbox: nil      # todo
+              distance: point.distance_to(polygon),
+              bbox: polygon.bbox
             }
 
             # search redis for a currently running game

@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    angelo (0.1.7)
+    angelo (0.1.8)
       mime-types
       reel
     celluloid (0.16.0.pre)
@@ -14,15 +14,15 @@ GEM
       redis
     coderay (1.1.0)
     connection_pool (2.0.0)
-    geotrigger (0.0.6)
+    geotrigger (0.0.8)
       httpclient
     hitimes (1.2.1)
-    http (0.6.0)
+    http (0.6.1)
       http_parser.rb (~> 0.6.0)
     http_parser.rb (0.6.0)
     httpclient (2.3.4.1)
     method_source (0.8.2)
-    mime-types (2.2)
+    mime-types (2.3)
     nio4r (1.0.0)
     pry (0.9.12.6)
       coderay (~> 1.0)
@@ -37,8 +37,8 @@ GEM
       http (>= 0.6.0.pre)
       http_parser.rb (>= 0.6.0)
       websocket_parser (>= 0.1.6)
-    rgeo (0.3.20)
     slop (3.5.0)
+    terraformer (0.0.3)
     timers (2.0.0)
       hitimes
     websocket_parser (0.1.6)
@@ -53,7 +53,7 @@ DEPENDENCIES
   celluloid-redis
   connection_pool
   geotrigger
-  httpclient
+  http
   pry
   pry-nav
-  rgeo
+  terraformer

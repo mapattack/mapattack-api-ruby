@@ -1,66 +1,30 @@
-module Mapattack; module ArcGIS
+module Mapattack
+  class ArcGIS
+    include Celluloid::IO
 
-  module HTTPClientActor
-
-    def self.included base
-      # base.__send__ :include, Celluloid
-      base.__send__ :include, Celluloid::IO
-    end
-
-    def hc
-      @hc ||= HTTPClient.new
-      @hc
-    end
-
-    def get url, params = {}
-      request :get, url, params
-    end
-
-    def post url, params = {}
-      request :post, url, params
-    end
-
-    def request meth, url, params
-      JSON.parse hc.__send__(meth, url, params.merge(f: 'json')).body
-    end
-    private :request
-
-  end
-
-  class DeviceRegstrar
-    include HTTPClientActor
-
-    URL = 'https://www.arcgis.com/sharing/oauth2/registerDevice'
+    REGISTER_URL = 'https://www.arcgis.com/sharing/oauth2/registerDevice'
 
     def register
-      post URL, client_id: Mapattack::CONFIG[:ago_client_id]
+      post REGISTER_URL, client_id: CONFIG[:ago_client_id]
     end
 
-  end
 
-  class DeviceUpdater
-    include HTTPClientActor
 
-    URL = 'https://www.arcgis.com/sharing/oauth2/apps/%s/devices/%s/update'
+    UPDATE_URL = 'https://www.arcgis.com/sharing/oauth2/apps/%s/devices/%s/update'
 
     def update ago_data, params
-      post URL % [CONFIG[:ago_client_id], ago_data['device_id']],
+      post UPDATE_URL % [CONFIG[:ago_client_id], ago_data['device_id']],
         token: ago_data['access_token'],
         apnsProdToken: params[:apns_prod_token],
         apnsSandboxToken: params[:apns_sandbox_token],
         gcmRegistrationId: params[:gcm_registration_id]
     end
 
-  end
 
-  def self.device_registrar_pool
-    # @device_registrar_pool ||= DeviceRegstrar.pool
-    @device_registrar_pool ||= DeviceRegstrar.new
-  end
 
-  def self.device_updater_pool
-    # @device_updater_pool ||= DeviceUpdater.pool
-    @device_updater_pool ||= DeviceUpdater.new
-  end
+    def post url, params
+      JSON.parse HTTP.post(url, params: params.merge(f: :json)).body
+    end
 
-end; end
+  end
+end

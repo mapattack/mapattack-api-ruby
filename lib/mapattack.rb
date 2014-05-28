@@ -1,6 +1,6 @@
 require 'json'
 require 'yaml'
-require 'httpclient'
+# require 'httpclient'
 
 require 'bundler'
 Bundler.require
@@ -18,14 +18,6 @@ module Mapattack
 
   CONFIG = YAML.load_file File.expand_path '../../config.yml', __FILE__
 
-  @udp = Mapattack::UDP::Service.new
-  def self.udp; @udp; end
-
-  @rgeo = ::RGeo::Geographic.spherical_factory srid: 4326, buffer_resolution: 8
-  def self.rgeo; if block_given?; yield @rgeo; else; @rgeo; end; end
-
-
-
   REDIS_POOL_CONF = {
     timeout: 5,
     size: 16
@@ -34,35 +26,36 @@ module Mapattack
   REDIS_DEVICE_PROFILE = 'device:profile:%s'
   REDIS_GAME_CHANNEL = 'game:%s'
 
-  def self.redis &block
-    @redis ||= ConnectionPool.new REDIS_POOL_CONF do
-      Redis.new driver: :celluloid
-    end
-    @redis.with &block
-  end
-
-
-
-  def self.geotrigger
-    @geotrigger ||= ::ArcGIS::GT::Application.new client_id: CONFIG[:ago_client_id],
-                                                  client_secret: CONFIG[:ago_client_secret]
-  end
-
-
-
   ID_POSSIBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.freeze
 
-  def self.generate_id length
-    Array.new(length).map {ID_POSSIBLE[rand ID_POSSIBLE.length]}.join
+  class << self
+
+    @udp = UDP::Service.new
+
+    @arcgis = ArcGIS.new
+    attr_reader :arcgis
+
+    def redis &block
+      @redis ||= ConnectionPool.new REDIS_POOL_CONF do
+        Redis.new driver: :celluloid
+      end
+      @redis.with &block
+    end
+
+    def geotrigger
+      @geotrigger ||= Geotrigger::Application.new client_id: CONFIG[:ago_client_id],
+                                                  client_secret: CONFIG[:ago_client_secret]
+    end
+
+    def generate_id length
+      Array.new(length).map {ID_POSSIBLE[rand ID_POSSIBLE.length]}.join
+    end
+
   end
-
-
-
 end
 
 require 'mapattack/arcgis'
 require 'mapattack/webserver/helpers'
-# require 'mapattack/webserver/websocket_handler'
 require 'mapattack/webserver'
 
 Mapattack::Webserver.run unless $0 == 'irb'

@@ -6,7 +6,6 @@ module Mapattack
       RECV_MAXLEN = 576
 
       finalizer :finalize
-      attr_reader :websockets
 
       def initialize
         @socket = Celluloid::IO::UDPSocket.new
@@ -16,13 +15,32 @@ module Mapattack
       end
 
       def listen
-        loop {
-          @handler_pool.async.handle_data *@socket.recvfrom(RECV_MAXLEN)
-        }
+        loop { async.handle_data *@socket.recvfrom(RECV_MAXLEN) }
       end
 
       def finalize
         @socket.close if @socket
+      end
+
+      def handle_data data, server_inet_addr
+        Mapattack.redis {|r| r.publish REDIS_GAME_CHANNEL % 'foo', data}
+      end
+
+      def build_location_update data
+        accuracy = Integer(data['accuracy'])
+        accuracy = 5 if accuracy <= 30
+        {
+          locations: [
+            {
+              timestamp: Integer(data['timestamp']),
+              latitude:  Float(data['latitude']),
+              longitude: Float(data['longitude']),
+              accuracy:  accuracy,
+              speed:     Integer(data['speed']),
+              bearing:   Integer(data['bearing'])
+            }
+          ]
+        }
       end
 
     end
