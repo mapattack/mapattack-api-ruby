@@ -10,7 +10,6 @@ module Mapattack
       def initialize
         @socket = Celluloid::IO::UDPSocket.new
         @socket.bind '0.0.0.0', CONFIG[:udp_port]
-        @handler_pool = Handler.pool args: [Celluloid::Actor.current]
         async.listen
       end
 

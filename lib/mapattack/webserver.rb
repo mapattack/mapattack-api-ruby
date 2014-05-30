@@ -4,13 +4,15 @@ module Mapattack
 
     %w[ device
         board
+        game
     ].each {|mod| require "mapattack/webserver/#{mod}"}
     include Device
     include Board
+    include Game
 
     content_type :json
 
-    socket '/ws' do |s|
+    websocket '/ws' do |s|
       # WebsocketHandler.new s
     end
 

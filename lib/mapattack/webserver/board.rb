@@ -1,14 +1,4 @@
 module Mapattack::Webserver::Board
-
-  BOARD_ID_KEY =             'board:%s'
-  BOARD_ID_GAME_KEY =        'board:%s:game'
-  COIN_BOARD_ID_KEY =        'coin:board:%s'
-  GAME_ID_RED_KEY =          'game:%s:red'
-  GAME_ID_BLUE_KEY =         'game:%s:blue'
-  GAME_ID_RED_MEMBERS_KEY =  'game:%s:red:members'
-  GAME_ID_BLUE_MEMBERS_KEY = 'game:%s:blue:members'
-  GAME_ID_ACTIVE_KEY =       'game:%s:active'
-
   def self.included base
     base.class_eval do
 

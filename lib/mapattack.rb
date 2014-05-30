@@ -8,13 +8,24 @@ Bundler.require
 $:.unshift File.expand_path '..', __FILE__
 
 require 'mapattack/udp/service'
-require 'mapattack/udp/handler'
+require 'mapattack/arcgis'
 
 module Mapattack
 
   BOARD_ID_REGEX = /^board:([^:]+)$/
   GAME_ID_REGEX = /^game:([^:]+)$/
   COIN_ID_REGEX = /^coin:([^:]+)$/
+
+  BOARD_ID_KEY =             'board:%s'
+  BOARD_ID_GAME_KEY =        'board:%s:game'
+  COIN_BOARD_ID_KEY =        'coin:board:%s'
+  GAME_ID_RED_KEY =          'game:%s:red'
+  GAME_ID_BLUE_KEY =         'game:%s:blue'
+  GAME_ID_RED_MEMBERS_KEY =  'game:%s:red:members'
+  GAME_ID_BLUE_MEMBERS_KEY = 'game:%s:blue:members'
+  GAME_ID_ACTIVE_KEY =       'game:%s:active'
+
+  BOARD_TAG = 'board'
 
   CONFIG = YAML.load_file File.expand_path '../../config.yml', __FILE__
 
@@ -54,7 +65,6 @@ module Mapattack
   end
 end
 
-require 'mapattack/arcgis'
 require 'mapattack/webserver/helpers'
 require 'mapattack/webserver'
 
