@@ -26,7 +26,7 @@ module Mapattack
   REDIS_DEVICE_PROFILE = 'device:profile:%s'
   REDIS_GAME_CHANNEL = 'game:%s'
 
-  ID_POSSIBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.freeze
+  ID_POSSIBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
   class << self
 

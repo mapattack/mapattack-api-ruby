@@ -55,5 +55,13 @@ module Mapattack
       end
     end
 
+    def with_device_gt_session &block
+      require_access_token do
+        @gt = Geotrigger::Session.new client_id: CONFIG[:ago_client_id], type: :device
+        @gt.access_token = params[:access_token]
+        yield
+      end
+    end
+
   end
 end

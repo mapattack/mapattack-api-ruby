@@ -1,15 +1,19 @@
 module Mapattack::Webserver::Board
 
-  BOARD_ID_GAME_KEY =        'board:%s:game'.freeze
-  GAME_ID_RED_KEY =          'game:%s:red'.freeze
-  GAME_ID_BLUE_KEY =         'game:%s:blue'.freeze
-  GAME_ID_RED_MEMBERS_KEY =  'game:%s:red:members'.freeze
-  GAME_ID_BLUE_MEMBERS_KEY = 'game:%s:blue:members'.freeze
-  GAME_ID_ACTIVE_KEY =       'game:%s:active'.freeze
+  BOARD_ID_KEY =             'board:%s'
+  BOARD_ID_GAME_KEY =        'board:%s:game'
+  COIN_BOARD_ID_KEY =        'coin:board:%s'
+  GAME_ID_RED_KEY =          'game:%s:red'
+  GAME_ID_BLUE_KEY =         'game:%s:blue'
+  GAME_ID_RED_MEMBERS_KEY =  'game:%s:red:members'
+  GAME_ID_BLUE_MEMBERS_KEY = 'game:%s:blue:members'
+  GAME_ID_ACTIVE_KEY =       'game:%s:active'
 
   def self.included base
     base.class_eval do
 
+      # full list of available boards within 1km
+      #
       get '/board/list' do
 
         boards = []
@@ -87,8 +91,51 @@ module Mapattack::Webserver::Board
         { boards: boards }
       end
 
+      # a newly generated board id suitable for a new board
+      #
       post '/board/new' do
         { board_id: Mapattack.generate_id }
+      end
+
+      # full state of the board with coins
+      #
+      get '/board/state' do
+        with_device_gt_session do
+
+          # app model, with session built from params[:access_token]
+          #
+          a = Geotrigger::Application.new session: @gt
+
+          # get the trigger for this board i.e. the board
+          #
+          b = a.triggers(tags: [BOARD_ID_KEY % params[:board_id]]).first
+
+          # build up the board state hash
+          #
+          board = {
+            board_id: params[:board_id],
+            game_id: false,
+            name: b.properties['title'] || 'Untitled Board',
+            bbox: Terraformer.parse(b.condition['geo']['geojson']).bbox
+          }
+
+          # map the coin state hash
+          #
+          coins = a.triggers(tags: [COIN_BOARD_ID_KEY % params[:board_id]]).map do |coin|
+            { coin_id: coin.trigger_id,
+              latitude: coin.condition['geo']['latitude'],
+              longitude: coin.condition['geo']['longitude'],
+              value: coin.properties['value'] }
+          end
+
+          # if we have a game running, add the id to the state
+          #
+          if game_id = Mapattack.redis {|r| r.get BOARD_ID_GAME_KEY % params[:board_id]}
+            board[:game_id] = game_id
+          end
+
+          { board: board, coins: coins }
+        end
       end
 
     end
