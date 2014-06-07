@@ -18,12 +18,19 @@ module Mapattack
 
   BOARD_ID_KEY =             'board:%s'
   BOARD_ID_GAME_KEY =        'board:%s:game'
+
   COIN_BOARD_ID_KEY =        'coin:board:%s'
+
   GAME_ID_RED_KEY =          'game:%s:red'
   GAME_ID_BLUE_KEY =         'game:%s:blue'
   GAME_ID_RED_MEMBERS_KEY =  'game:%s:red:members'
   GAME_ID_BLUE_MEMBERS_KEY = 'game:%s:blue:members'
   GAME_ID_ACTIVE_KEY =       'game:%s:active'
+  GAME_ID_BOARD_KEY =        'game:%s:board'
+  GAME_ID_DATA_KEY =         'game:%s:data'
+  GAME_ID_COIN_DATA_KEY =    'game:%s:coin_data'
+
+  DEVICE_PROFILE_ID_KEY =    'device:profile:%s'
 
   BOARD_TAG = 'board'
 

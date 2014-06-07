@@ -39,6 +39,62 @@ module Mapattack::Webserver::Game
 
       end
 
+      post '/game/create' do
+        param_error :board_id, :required, 'missing board_id parameter' unless params[:board_id]
+        halt if response.error?
+
+        with_device_gt_session do
+
+          game_id = Mapattack.generate_id
+          board_id = params[:board_id]
+          device_id = @gt.device_data['deviceId']
+
+          Mapattack.redis do |r|
+            r.pipelined do
+              r.set GAME_ID_BOARD_KEY % game_id, board_id
+              r.set BOARD_ID_GAME_KEY % board_id, game_id
+            end
+          end
+
+          # save game info
+          #
+          a = Geotrigger::Application.new session: @gt
+          board = a.triggers(tags: [BOARD_ID_KEY % board_id]).first
+          board_polygon = Terraformer.parse board.condition['geo']['geojson']
+
+          device_profile = JSON.parse Mapattack.redis {|r| r.get DEVICE_PROFILE_ID_KEY % device_id}
+          game_data = {
+            name: board.properties['title'],
+            bbox: board_polygon.bbox,
+            creator: {
+              device_id: device_id,
+              name: device_profile['name']
+            }
+          }
+          Mapattack.redis do |r|
+            r.set GAME_ID_DATA_KEY % game_id, game_data.to_json
+          end
+
+          # copy game coins
+          #
+          a.triggers(tags: [COIN_BOARD_ID_KEY % board_id]).each do |coin_trigger|
+            coin_data = {
+              latitude: coin_trigger.condition['geo']['latitude'],
+              longitude: coin_trigger.condition['geo']['longitude'],
+              value: coin_trigger.properties['value'].to_i
+            }
+            Mapattack.redis do |r|
+              r.hset GAME_ID_COIN_DATA_KEY % game_id, coin_trigger.trigger_id, coin_data.to_json
+            end
+          end
+
+          # add device to game
+          #
+
+
+        end
+      end
+
       # ---
 
       def game_stats_for game_id
