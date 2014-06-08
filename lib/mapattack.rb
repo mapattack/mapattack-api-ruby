@@ -25,14 +25,19 @@ module Mapattack
   GAME_ID_BLUE_KEY =         'game:%s:blue'
   GAME_ID_RED_MEMBERS_KEY =  'game:%s:red:members'
   GAME_ID_BLUE_MEMBERS_KEY = 'game:%s:blue:members'
+  GAME_ID_TEAM_MEMBERS_KEY = 'game:%s:%s:members'
+  GAME_ID_TEAM_KEY =         'game:%s:%s'
   GAME_ID_ACTIVE_KEY =       'game:%s:active'
   GAME_ID_BOARD_KEY =        'game:%s:board'
   GAME_ID_DATA_KEY =         'game:%s:data'
   GAME_ID_COIN_DATA_KEY =    'game:%s:coin_data'
 
   DEVICE_PROFILE_ID_KEY =    'device:profile:%s'
+  DEVICE_TEAM_KEY =          'device:team:%s'
+  DEVICE_ACTIVE_GAME_KEY =   'device:active_game:%s'
 
-  BOARD_TAG = 'board'
+  BOARD_TAG =   'board'
+  GAME_ID_TAG = 'game:%s'
 
   CONFIG = YAML.load_file File.expand_path '../../config.yml', __FILE__
 

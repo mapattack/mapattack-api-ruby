@@ -3,6 +3,11 @@ module Mapattack
 
     attr_accessor :id, :board
 
+    def initialize opts = {}
+      self.id = opts[:id] || Mapattack.generate_id
+      self.board = opts[:board]
+    end
+
     def team_counts
       counts = Mapattack.redis do |r|
         r.multi do

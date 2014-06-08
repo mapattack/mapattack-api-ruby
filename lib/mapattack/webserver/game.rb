@@ -14,7 +14,7 @@ module Mapattack::Webserver::Game
           board_id = nil
 
           b.data['tags'].each do |t|
-            board_id = $1 if t =~ /^board:([^:]+)$/
+            board_id = m[1] if m = BOARD_ID_REGEX.match t
             break if board_id
           end
 
@@ -45,35 +45,33 @@ module Mapattack::Webserver::Game
 
         with_device_gt_session do
 
-          game_id = Mapattack.generate_id
+          game = Models::Game.new
           board_id = params[:board_id]
-          device_id = @gt.device_data['deviceId']
+          device = Models::Device.new id: @gt.device_data['deviceId'], gt_session: @gt
 
           Mapattack.redis do |r|
             r.pipelined do
-              r.set GAME_ID_BOARD_KEY % game_id, board_id
-              r.set BOARD_ID_GAME_KEY % board_id, game_id
+              r.set GAME_ID_BOARD_KEY % game.id, board_id
+              r.set BOARD_ID_GAME_KEY % board_id, game.id
             end
           end
 
           # save game info
           #
           a = Geotrigger::Application.new session: @gt
-          board = a.triggers(tags: [BOARD_ID_KEY % board_id]).first
-          board_polygon = Terraformer.parse board.condition['geo']['geojson']
+          board_trigger = a.triggers(tags: [BOARD_ID_KEY % board_id]).first
+          board_polygon = Terraformer.parse board_trigger.condition['geo']['geojson']
 
           device_profile = JSON.parse Mapattack.redis {|r| r.get DEVICE_PROFILE_ID_KEY % device_id}
           game_data = {
-            name: board.properties['title'],
+            name: board_trigger.properties['title'],
             bbox: board_polygon.bbox,
             creator: {
-              device_id: device_id,
+              device_id: device.id,
               name: device_profile['name']
             }
           }
-          Mapattack.redis do |r|
-            r.set GAME_ID_DATA_KEY % game_id, game_data.to_json
-          end
+          Mapattack.redis {|r| r.set GAME_ID_DATA_KEY % game.id, game_data.to_json}
 
           # copy game coins
           #
@@ -84,14 +82,17 @@ module Mapattack::Webserver::Game
               value: coin_trigger.properties['value'].to_i
             }
             Mapattack.redis do |r|
-              r.hset GAME_ID_COIN_DATA_KEY % game_id, coin_trigger.trigger_id, coin_data.to_json
+              r.hset GAME_ID_COIN_DATA_KEY % game.id, coin_trigger.trigger_id, coin_data.to_json
             end
           end
 
           # add device to game
           #
+          team = device.choose_team_for game
+          device.set_game_tag game
+          device.set_active_game game, team
 
-
+          { game_id: game.id, team: team }
         end
       end
 
