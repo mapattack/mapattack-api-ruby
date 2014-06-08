@@ -1,5 +1,5 @@
 module Mapattack
-  class Device < Model
+  class Device
 
     attr_accessor :id, :gt_sesion
 
@@ -36,7 +36,7 @@ module Mapattack
     end
 
     def set_game_tag game
-      gt_session.post 'device/update', setTags: GAME_ID_TAG % game.id
+      (gt_session || Mapattack.geotrigger).post 'device/update', setTags: GAME_ID_TAG % game.id
     end
 
     def active_game
