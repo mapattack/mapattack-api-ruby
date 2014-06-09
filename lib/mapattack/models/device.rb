@@ -77,5 +77,9 @@ module Mapattack
 
     end
 
+    def profile
+      @profile ||= JSON.parse Mapattack.redis {|r| r.get DEVICE_PROFILE_ID_KEY % id}
+    end
+
   end
 end

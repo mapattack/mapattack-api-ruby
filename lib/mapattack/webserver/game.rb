@@ -109,10 +109,36 @@ module Mapattack::Webserver::Game
                                             action: {callbackUrl: CONFIG[:callback_url]}
 
           Mapattack.redis do |r|
-            r.publish REDIS_GAME_CHANNEL % game.id, {type: GAME_START_EVENT, game_id: game.id}.to_json
+            r.publish GAME_ID_KEY % game.id, {type: GAME_START_EVENT, game_id: game.id}.to_json
           end
 
           { game_id: game.id, num_coins: data['triggers'].length }
+        end
+      end
+
+      post '/game/join' do
+        raise RequestError.new game_id: 'required' if params[:game_id].nil? or params[:game_id].empty?
+        with_device_gt_session do
+
+          game = Mapattack::Game.new id: params[:game_id]
+          device = Mapattack::Device.new id: @gt.device_data['deviceId'], gt_session: @gt
+          team = device.choose_team_for game
+          device.set_game_tag game
+          device.set_active_game game
+
+          Mapattack.redis do |r|
+            r.publish GAME_ID_KEY % game.id, {type: PLAYER_JOIN_EVENT, name: device.profile['name']}
+            #todo
+          end
+
+=begin
+  redis.publish("game:"+game_id, JSON.stringify({
+    type: "player_join",
+    name: params.name,
+    team: params.team,
+    device_id: device_id
+=end
+
         end
       end
 

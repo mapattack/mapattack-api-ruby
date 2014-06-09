@@ -21,6 +21,7 @@ module Mapattack
 
   COIN_BOARD_ID_KEY =        'coin:board:%s'
 
+  GAME_ID_KEY =              'game:%s'
   GAME_ID_RED_KEY =          'game:%s:red'
   GAME_ID_BLUE_KEY =         'game:%s:blue'
   GAME_ID_RED_MEMBERS_KEY =  'game:%s:red:members'
@@ -46,10 +47,9 @@ module Mapattack
     size: 16
   }
   REDIS_DEVICE_TOKENS =  'device:tokens:%s'
-  REDIS_DEVICE_PROFILE = 'device:profile:%s'
-  REDIS_GAME_CHANNEL = 'game:%s'
 
-  GAME_START_EVENT = 'game_start'
+  GAME_START_EVENT =  'game_start'
+  PLAYER_JOIN_EVENT = 'player_join'
 
   ID_POSSIBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
