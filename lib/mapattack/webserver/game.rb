@@ -40,9 +40,7 @@ module Mapattack::Webserver::Game
       end
 
       post '/game/create' do
-        param_error :board_id, :required, 'missing board_id parameter' unless params[:board_id]
-        halt if response.error?
-
+        raise RequestError.new board_id: "required" if params[:board_id].nil? or params[:board_id].empty?
         with_device_gt_session do
 
           game = Mapattack::Game.new
@@ -97,34 +95,32 @@ module Mapattack::Webserver::Game
       end
 
       post '/game/start' do
-        raise RequestError.new game_id: 'required' if params[:game_id].nil? or params[:game_id].empty?
+        require_game_id
         with_device_gt_session do
 
-          game = Mapattack::Game.new id: params[:game_id]
-          board = Mapattack::Board.for game
-          game.activate!
+          board = Mapattack::Board.for @game
+          @game.activate!
 
           data = @gt.post 'trigger/update', tags: COIN_BOARD_ID_KEY % board.id,
-                                            addTags: GAME_ID_TAG % game.id,
+                                            addTags: GAME_ID_TAG % @game.id,
                                             action: {callbackUrl: CONFIG[:callback_url]}
 
           Mapattack.redis do |r|
-            r.publish GAME_ID_KEY % game.id, {type: GAME_START_EVENT, game_id: game.id}.to_json
+            r.publish GAME_ID_KEY % @game.id, {type: GAME_START_EVENT, game_id: @game.id}.to_json
           end
 
-          { game_id: game.id, num_coins: data['triggers'].length }
+          { game_id: @game.id, num_coins: data['triggers'].length }
         end
       end
 
       post '/game/join' do
-        raise RequestError.new game_id: 'required' if params[:game_id].nil? or params[:game_id].empty?
+        require_game_id
         with_device_gt_session do
 
-          game = Mapattack::Game.new id: params[:game_id]
           device = Mapattack::Device.new id: @gt.device_data['deviceId'], gt_session: @gt
-          team = device.choose_team_for game
-          device.set_game_tag game
-          device.set_active_game game
+          team = device.choose_team_for @game
+          device.set_game_tag @game
+          device.set_active_game @game
 
           join_event = {
             type: PLAYER_JOIN_EVENT,
@@ -133,11 +129,15 @@ module Mapattack::Webserver::Game
             device_id: device.id
           }
           Mapattack.redis do |r|
-            r.publish GAME_ID_KEY % game.id, join_event
+            r.publish GAME_ID_KEY % @game.id, join_event
           end
 
-          { game_id: game.id, team: team }
+          { game_id: @game.id, team: team }
         end
+      end
+
+      get '/game/state' do
+
       end
 
       # ---

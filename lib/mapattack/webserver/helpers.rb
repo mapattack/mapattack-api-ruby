@@ -63,5 +63,10 @@ module Mapattack
       end
     end
 
+    def require_game_id
+      raise RequestError.new game_id: 'required' if params[:game_id].nil? or params[:game_id].empty?
+      @game = Mapattack::Game.new params[:game_id]
+    end
+
   end
 end
