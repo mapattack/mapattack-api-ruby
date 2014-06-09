@@ -36,6 +36,7 @@ module Mapattack
   DEVICE_PROFILE_ID_KEY =    'device:profile:%s'
   DEVICE_TEAM_KEY =          'device:team:%s'
   DEVICE_ACTIVE_GAME_KEY =   'device:active_game:%s'
+  DEVICE_TOKENS_KEY =        'device:tokens:%s'
 
   BOARD_TAG =   'board'
   GAME_ID_TAG = 'game:%s'
@@ -46,7 +47,6 @@ module Mapattack
     timeout: 5,
     size: 16
   }
-  REDIS_DEVICE_TOKENS =  'device:tokens:%s'
 
   GAME_START_EVENT =  'game_start'
   PLAYER_JOIN_EVENT = 'player_join'

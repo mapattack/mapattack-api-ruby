@@ -126,19 +126,17 @@ module Mapattack::Webserver::Game
           device.set_game_tag game
           device.set_active_game game
 
+          join_event = {
+            type: PLAYER_JOIN_EVENT,
+            name: device.profile['name'],
+            team: team,
+            device_id: device.id
+          }
           Mapattack.redis do |r|
-            r.publish GAME_ID_KEY % game.id, {type: PLAYER_JOIN_EVENT, name: device.profile['name']}
-            #todo
+            r.publish GAME_ID_KEY % game.id, join_event
           end
 
-=begin
-  redis.publish("game:"+game_id, JSON.stringify({
-    type: "player_join",
-    name: params.name,
-    team: params.team,
-    device_id: device_id
-=end
-
+          { game_id: game.id, team: team }
         end
       end
 

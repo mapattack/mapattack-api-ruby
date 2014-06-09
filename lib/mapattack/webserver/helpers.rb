@@ -15,7 +15,7 @@ module Mapattack
         access_token: dts['deviceToken']['access_token'],
         refresh_token: dts['deviceToken']['refresh_token']
       }
-      redis.set (REDIS_DEVICE_TOKENS % at), dts.to_json
+      redis.set (DEVICE_TOKENS_KEY % at), dts.to_json
 
       # save profile info
       #
@@ -41,7 +41,7 @@ module Mapattack
 
     def require_access_token &block
       if params[:access_token]
-        ago_data = redis.get REDIS_DEVICE_TOKENS % params[:access_token]
+        ago_data = redis.get DEVICE_TOKENS_KEY % params[:access_token]
         if ago_data
           @ago_data = Angelo::Responder.symhash.merge! JSON.parse ago_data
           profile = JSON.parse redis.get DEVICE_PROFILE_ID_KEY % @ago_data[:device_id]

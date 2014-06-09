@@ -16,7 +16,7 @@ module Mapattack::Webserver::Device
 
           # get AGO oauth data from redis
           #
-          dts = JSON.parse redis.get REDIS_DEVICE_TOKENS % params[:access_token] rescue nil
+          dts = JSON.parse redis.get DEVICE_TOKENS_KEY % params[:access_token] rescue nil
 
           # if we have everything...
           #
