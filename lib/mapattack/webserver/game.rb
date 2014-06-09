@@ -14,7 +14,7 @@ module Mapattack::Webserver::Game
           board_id = nil
 
           b.data['tags'].each do |t|
-            board_id = m[1] if m = BOARD_ID_REGEX.match t
+            board_id = m[1] if m = BOARD_ID_REGEX.match(t)
             break if board_id
           end
 
@@ -45,9 +45,9 @@ module Mapattack::Webserver::Game
 
         with_device_gt_session do
 
-          game = Models::Game.new
+          game = Mapattack::Game.new
           board_id = params[:board_id]
-          device = Models::Device.new id: @gt.device_data['deviceId'], gt_session: @gt
+          device = Mapattack::Device.new id: @gt.device_data['deviceId'], gt_session: @gt
 
           Mapattack.redis do |r|
             r.pipelined do
@@ -93,6 +93,26 @@ module Mapattack::Webserver::Game
           device.set_active_game game, team
 
           { game_id: game.id, team: team }
+        end
+      end
+
+      post '/game/start' do
+        raise RequestError.new game_id: 'required' if params[:game_id].nil? or params[:game_id].empty?
+        with_device_gt_session do
+
+          game = Mapattack::Game.new id: params[:game_id]
+          board = Mapattack::Board.for game
+          game.activate!
+
+          data = @gt.post 'trigger/update', tags: COIN_BOARD_ID_KEY % board.id,
+                                            addTags: GAME_ID_TAG % game.id,
+                                            action: {callbackUrl: CONFIG[:callback_url]}
+
+          Mapattack.redis do |r|
+            r.publish REDIS_GAME_CHANNEL % game.id, {type: GAME_START_EVENT, game_id: game.id}.to_json
+          end
+
+          { game_id: game.id, num_coins: data['triggers'].length }
         end
       end
 

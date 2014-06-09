@@ -49,6 +49,8 @@ module Mapattack
   REDIS_DEVICE_PROFILE = 'device:profile:%s'
   REDIS_GAME_CHANNEL = 'game:%s'
 
+  GAME_START_EVENT = 'game_start'
+
   ID_POSSIBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
   class << self
@@ -77,6 +79,10 @@ module Mapattack
   end
 end
 
+require 'mapattack/models/game'
+require 'mapattack/models/board'
+require 'mapattack/models/coin'
+require 'mapattack/models/device'
 require 'mapattack/webserver/helpers'
 require 'mapattack/webserver'
 

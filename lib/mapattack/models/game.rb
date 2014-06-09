@@ -18,5 +18,9 @@ module Mapattack
       { red: counts[0], blue: counts[1] }
     end
 
+    def activate!
+      Mapattack.redis {|r| r.set GAME_ID_ACTIVE_KEY % id, 1}
+    end
+
   end
 end
