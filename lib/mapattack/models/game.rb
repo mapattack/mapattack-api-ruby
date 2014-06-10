@@ -36,5 +36,9 @@ module Mapattack
       { red: ps[0], blue: ps[1] }
     end
 
+    def active?
+      Mapattack.redis {|r| r.get GAME_ID_ACTIVE_KEY % id} == 1
+    end
+
   end
 end

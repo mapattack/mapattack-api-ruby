@@ -140,7 +140,6 @@ module Mapattack::Webserver::Game
         require_game_id
         game_data = @game.data
 
-        coins = []
         red_score = 0
         blue_score = 0
         red_players = 0
@@ -151,7 +150,7 @@ module Mapattack::Webserver::Game
         coin_data = Mapattack::Coin.data_for @game
         coin_states = Mapattack::Coin.states_for @game
 
-        coin_data.each do |coin_id, coin|
+        coins = coin_data.map do |coin_id, coin|
           coin = JSON.parse coin
           _coin = {
             coin_id: coin_id,
@@ -168,11 +167,12 @@ module Mapattack::Webserver::Game
               blue_score += _coin[:value]
             end
           end
-          coins << _coin
+          _coin
         end
 
-        players = @game.players
-        device_ids = players[:red] + players[:blue]
+        # this gives us a list of device_ids, by team
+        player_vals = @game.players
+        device_ids = player_vals[:red] + player_vals[:blue]
 
         # get all player data
         #
@@ -207,8 +207,53 @@ module Mapattack::Webserver::Game
           end
         end
 
-        # todo
+        players = player_vals.map do |team, team_players|
+          team_players.map do |did|
+            p = {
+              device_id: did,
+              team: team,
+              score: 0
+            }
+            red_players += 1 if team == :red
+            blue_players += 1 if team == :blue
+            p.merge! l if all_player_data[did] && l = all_player_data[did][:location]
+            if all_player_data[did][:profile] && n = all_player_data[did][:profile]['name']
+              p[:name] = n
+            else
+              p[:name] = did[0,3]
+            end
+            p[:score] = all_scores[did] if all_scores[did]
+            p
+          end
+        end
+        players.flatten!
 
+        # response
+        #
+        {
+          game: {
+            game_id: @game.id,
+            active: @game.active?,
+            name: (game_data['name'] || 'Unititled Game'),
+            bbox: game_data['bbox'],
+            teams: {
+              blue: {
+                size: blue_players,
+                score: blue_score
+              },
+              red: {
+                size: red_players,
+                score: red_score
+              }
+            },
+            creator: {
+              name: (game_data['creator']['name'] rescue nil),
+              device_id: (game_data['creator']['device_id'] rescue nil)
+            }
+          },
+          coins: coins,
+          players: players
+        }
       end
 
       # ---
