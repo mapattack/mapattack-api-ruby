@@ -137,6 +137,77 @@ module Mapattack::Webserver::Game
       end
 
       get '/game/state' do
+        require_game_id
+        game_data = @game.data
+
+        coins = []
+        red_score = 0
+        blue_score = 0
+        red_players = 0
+        blue_players = 0
+
+        # populate coins and set scores
+        #
+        coin_data = Mapattack::Coin.data_for @game
+        coin_states = Mapattack::Coin.states_for @game
+
+        coin_data.each do |coin_id, coin|
+          coin = JSON.parse coin
+          _coin = {
+            coin_id: coin_id,
+            latitude: coin['latitude'],
+            longitude: coin['longitude'],
+            value: coin['value'].to_i
+          }
+          if coin_states and coin_states[coin_id]
+            _coin[:team] = coin_states[coin_id].to_sym
+            case _coin[:team]
+            when :red
+              red_score += _coin[:value]
+            when :blue
+              blue_score += _coin[:value]
+            end
+          end
+          coins << _coin
+        end
+
+        players = @game.players
+        device_ids = players[:red] + players[:blue]
+
+        # get all player data
+        #
+        all_player_data = {}
+        pd = Mapattack.redis do |r|
+          r.multi do
+            device_ids.each do |did|
+              r.get DEVICE_LOCATION_ID_KEY % did
+              r.get DEVICE_PROFILE_ID_KEY % did
+            end
+          end
+        end
+        device_ids.each_with_index do |did, i|
+          all_player_data[did] = {
+            location: JSON.parse(pd[i*2]),
+            profile: JSON.parse(pd[i*2+1])
+          }
+        end
+
+        # get all scores
+        #
+        all_scores = {}
+        as = Mapattack.redis do |r|
+          r.hgetall GAME_ID_BLUE_KEY % @game.id
+          r.hgetall GAME_ID_RED_KEY % @game.id
+        end
+        as.each do |scores|
+          scores.each do |did, score|
+            if m = DEVICE_ID_REGEX.match(did)
+              all_scores[m[1]] = score.to_i
+            end
+          end
+        end
+
+        # todo
 
       end
 

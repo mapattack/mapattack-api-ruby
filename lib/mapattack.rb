@@ -15,6 +15,7 @@ module Mapattack
   BOARD_ID_REGEX = /^board:([^:]+)$/
   GAME_ID_REGEX = /^game:([^:]+)$/
   COIN_ID_REGEX = /^coin:([^:]+)$/
+  DEVICE_ID_REGEX = /^device:([^:]+)$/
 
   BOARD_ID_KEY =             'board:%s'
   BOARD_ID_GAME_KEY =        'board:%s:game'
@@ -32,11 +33,13 @@ module Mapattack
   GAME_ID_BOARD_KEY =        'game:%s:board'
   GAME_ID_DATA_KEY =         'game:%s:data'
   GAME_ID_COIN_DATA_KEY =    'game:%s:coin_data'
+  GAME_ID_COINS_KEY =        'game:%s:coins'
 
   DEVICE_PROFILE_ID_KEY =    'device:profile:%s'
   DEVICE_TEAM_KEY =          'device:team:%s'
   DEVICE_ACTIVE_GAME_KEY =   'device:active_game:%s'
   DEVICE_TOKENS_KEY =        'device:tokens:%s'
+  DEVICE_LOCATION_ID_KEY =   'device:location:%s'
 
   BOARD_TAG =   'board'
   GAME_ID_TAG = 'game:%s'
