@@ -1,4 +1,4 @@
-module Mapattack::Webserver::Device
+module Mapattack::Webserver::DeviceRoutes
   def self.included base
     base.class_eval do
 
@@ -10,13 +10,13 @@ module Mapattack::Webserver::Device
 
           # create token, register device, stash in redis
           #
-          create_new_ago_device
+          Device.create_new_ago_device
 
         else
 
           # get AGO oauth data from redis
           #
-          dts = JSON.parse redis.get DEVICE_TOKENS_KEY % params[:access_token] rescue nil
+          dts = JSON.parse redis.get(DEVICE_TOKENS_KEY % params[:access_token]) rescue nil
 
           # if we have everything...
           #
@@ -24,12 +24,13 @@ module Mapattack::Webserver::Device
 
             # update profile
             #
-            set_profile dts['device_id']
+            d = Device.new id: dts['device_id']
+            d.set_profile params[:name], params[:avatar]
 
             # respond with id and "access_token"
             #
             {
-              device_id: dts['device_id'],
+              device_id: d.id,
               access_token: params[:access_token]
             }
 
@@ -38,7 +39,7 @@ module Mapattack::Webserver::Device
 
             # ain't nobody got time for that
             #
-            create_new_ago_device
+            Device.create_new_ago_device
 
           end
 

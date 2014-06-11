@@ -1,20 +1,50 @@
 module Mapattack
-  class Device
+  class Device < Model
 
-    attr_accessor :id, :gt_sesion
+    attr_accessor :gt_sesion
+
+    class << self
+
+      def create_new_ago_device
+
+        # create a new "access_token" to map to real AGO oauth data
+        #
+        at = Mapattack.generate_id 48
+
+        # register for AGO oauth data and save it
+        #
+        dts = Mapattack.arcgis.register
+        dts = {
+          device_id: dts['device']['deviceId'],
+          access_token: dts['deviceToken']['access_token'],
+          refresh_token: dts['deviceToken']['refresh_token']
+        }
+        redis.set (DEVICE_TOKENS_KEY % at), dts.to_json
+
+        # save profile info
+        #
+        Device.new(dts[:device_id]).set_profile
+
+        # respond with id and "access_token"
+        #
+        {
+          device_id: dts[:device_id],
+          access_token: at
+        }
+      end
+
+    end
 
     def initialize opts = {}
-      self.id = opts[:id]
+      super
       self.gt_session = opts[:gt_session]
     end
 
     def team_for_game_id game
-      team_membership = Mapattack.redis do |r|
-        r.multi do
-          r.sismember GAME_ID_RED_MEMBERS_KEY % game.id, self.id
-          r.sismember GAME_ID_BLUE_MEMBERS_KEY % game.id, self.id
-        end
-      end
+      team_membership = redis.multi [
+        [:sismember, GAME_ID_RED_MEMBERS_KEY % game.id, self.id],
+        [:sismember, GAME_ID_BLUE_MEMBERS_KEY % game.id, self.id]
+      ]
 
       return :red if team_membership[0]
       return :blue if team_membership[1]
@@ -31,7 +61,7 @@ module Mapattack
           team = :blue
         end
       end
-      Mapattack.redis {|r| r.set DEVICE_TEAM_KEY % team}
+      redis.set DEVICE_TEAM_KEY % team
       return team
     end
 
@@ -40,14 +70,12 @@ module Mapattack
     end
 
     def active_game
-      active_game = Mapattack.redis {|r| r.get DEVICE_ACTIVE_GAME_KEY % id}
+      active_game = redis.get DEVICE_ACTIVE_GAME_KEY % id
       active_game_data = JSON.parse(active_game) || { game_id: nil, team: nil }
-      responses = Mapattack.redis do |r|
-        r.multi do
-          r.hget GAME_ID_TEAM_KEY % [active_game_data['game_id'], active_game_data['team']]
-          r.get DEVICE_PROFILE_ID_KEY % id
-        end
-      end
+      responses = redis.multi [
+        [:hget, GAME_ID_TEAM_KEY % [active_game_data['game_id'], active_game_data['team']]],
+        [:get, DEVICE_PROFILE_ID_KEY % id]
+      ]
       profile = JSON.parse responses[1]
       {
         game_id: active_game_data['game_id'],
@@ -61,24 +89,26 @@ module Mapattack
 
       # remove from other active game if there is one
       #
-      Mapattack.redis {|r| r.srem GAME_ID_TEAM_MEMBERS_KEY % [ag['game_id'], ag['team']]} if ag = self.active_game
+      redis.srem GAME_ID_TEAM_MEMBERS_KEY % [ag['game_id'], ag['team']] if ag = self.active_game
 
       other_team = team.to_sym == :red ? :blue : :red
 
       # set current active game to given one
       #
-      Mapattack.redis do |r|
-        r.multi do
-          r.set DEVICE_ACTIVE_GAME_KEY % id, {game_id: game.id, team: team}.to_json
-          r.srem GAME_ID_TEAM_MEMBERS_KEY % [game.id, other_team], id
-          r.sadd GAME_ID_TEAM_MEMBERS_KEY % [game.id, team], id
-        end
-      end
-
+      redis.multi [
+        [:set, DEVICE_ACTIVE_GAME_KEY % id, {game_id: game.id, team: team}.to_json],
+        [:srem, GAME_ID_TEAM_MEMBERS_KEY % [game.id, other_team], id],
+        [:sadd, GAME_ID_TEAM_MEMBERS_KEY % [game.id, team], id]
+      ]
     end
 
     def profile
-      @profile ||= JSON.parse Mapattack.redis {|r| r.get DEVICE_PROFILE_ID_KEY % id}
+      @profile ||= JSON.parse redis.get DEVICE_PROFILE_ID_KEY % id
+    end
+
+    def set_profile name, avatar
+      profile_json = {name: name, avatar: avatar}.to_json
+      redis.set DEVICE_PROFILE_ID_KEY % id, profile_json
     end
 
   end

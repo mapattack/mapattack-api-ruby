@@ -1,43 +1,40 @@
 module Mapattack
-  class Game
+  class Game < Model
 
-    attr_accessor :id, :board
+    attr_accessor :board
 
     def initialize opts = {}
-      self.id = opts[:id] || Mapattack.generate_id
+      super
       self.board = opts[:board]
+      self.id ||= Mapattack.generate_id
     end
 
     def team_counts
-      counts = Mapattack.redis do |r|
-        r.multi do
-          r.scard GAME_ID_RED_MEMBERS_KEY % self.id
-          r.scard GAME_ID_BLUE_MEMBERS_KEY % self.id
-        end
-      end
+      counts = redis.multi [
+        [:scard, GAME_ID_RED_MEMBERS_KEY % self.id],
+        [:scard, GAME_ID_BLUE_MEMBERS_KEY % self.id]
+      ]
       { red: counts[0], blue: counts[1] }
     end
 
     def activate!
-      Mapattack.redis {|r| r.set GAME_ID_ACTIVE_KEY % id, 1}
+      redis.set GAME_ID_ACTIVE_KEY % id, 1
     end
 
     def data
-      JSON.parse Mapattack.redis {|r| r.get GAME_ID_DATA_KEY % id}
+      JSON.parse redis.get GAME_ID_DATA_KEY % id
     end
 
     def players
-      ps = Mapattack.redis do |r|
-        r.multi do
-          r.smembers GAME_ID_RED_MEMBERS_KEY % id
-          r.smembers GAME_ID_BLUE_MEMBERS_KEY % id
-        end
-      end
+      ps = r.multi [
+        [:smembers, GAME_ID_RED_MEMBERS_KEY % id],
+        [:smembers, GAME_ID_BLUE_MEMBERS_KEY % id]
+      ]
       { red: ps[0], blue: ps[1] }
     end
 
     def active?
-      Mapattack.redis {|r| r.get GAME_ID_ACTIVE_KEY % id} == 1
+      redis.get(GAME_ID_ACTIVE_KEY % id) == 1
     end
 
   end

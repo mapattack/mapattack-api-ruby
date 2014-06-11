@@ -80,8 +80,62 @@ module Mapattack
     end
 
   end
+
+  class RedisPool
+
+    def method_missing meth, *args
+      Mapattack.redis {|r| r.__send__ meth, *args}
+    end
+
+    # [calls] +Array+ array of arrays that each contain a method name and args
+    #
+    def multi calls = []
+      Mapattack.redis do |r|
+        r.multi do
+          calls.each {|c| r.__send__ c.shift, *c}
+          yield r if block_given?
+        end
+      end
+    end
+
+    # [calls] +Array+ array of arrays that each contain a method name and args
+    #
+    def pipelined calls = []
+      futures = []
+      Mapattack.redis do |r|
+        r.pipelined do
+          futures += calls.map {|c| r.__send__ c.shift, *c}
+          yield futures, r if block_given?
+        end
+      end
+      return futures
+    end
+
+  end
+
+  module RedisPoolified
+
+    module ClassMethods
+      def redis
+        @redis ||= RedisPool.new
+      end
+    end
+
+    class << self
+      def included base
+        base.extend ClassMethods
+      end
+    end
+
+    def redis
+      self.class.redis
+    end
+
+  end
+
 end
 
+require 'mapattack/models/model'
 require 'mapattack/models/game'
 require 'mapattack/models/board'
 require 'mapattack/models/coin'

@@ -1,4 +1,4 @@
-module Mapattack::Webserver::Game
+module Mapattack::Webserver::GameRoutes
   def self.included base
     base.class_eval do
 
@@ -29,7 +29,7 @@ module Mapattack::Webserver::Game
             }
 
             board[:distance] = user_location.distance_to geo if user_location
-            if game_id = Mapattack.redis {|r| r.get BOARD_ID_GAME_KEY % board_id}
+            if game_id = redis.get(BOARD_ID_GAME_KEY % board_id)
               games << game_stats_for(game_id)
             end
           end
@@ -43,9 +43,9 @@ module Mapattack::Webserver::Game
         raise RequestError.new board_id: "required" if params[:board_id].nil? or params[:board_id].empty?
         with_device_gt_session do
 
-          game = Mapattack::Game.new
+          game = Game.new
           board_id = params[:board_id]
-          device = Mapattack::Device.new id: @gt.device_data['deviceId'], gt_session: @gt
+          device = Device.new id: @gt.device_data['deviceId'], gt_session: @gt
 
           Mapattack.redis do |r|
             r.pipelined do
@@ -60,7 +60,7 @@ module Mapattack::Webserver::Game
           board_trigger = a.triggers(tags: [BOARD_ID_KEY % board_id]).first
           board_polygon = Terraformer.parse board_trigger.condition['geo']['geojson']
 
-          device_profile = JSON.parse Mapattack.redis {|r| r.get DEVICE_PROFILE_ID_KEY % device_id}
+          device_profile = JSON.parse redis.get DEVICE_PROFILE_ID_KEY % device_id
           game_data = {
             name: board_trigger.properties['title'],
             bbox: board_polygon.bbox,
@@ -69,7 +69,7 @@ module Mapattack::Webserver::Game
               name: device_profile['name']
             }
           }
-          Mapattack.redis {|r| r.set GAME_ID_DATA_KEY % game.id, game_data.to_json}
+          redis.set GAME_ID_DATA_KEY % game.id, game_data.to_json
 
           # copy game coins
           #
@@ -79,9 +79,7 @@ module Mapattack::Webserver::Game
               longitude: coin_trigger.condition['geo']['longitude'],
               value: coin_trigger.properties['value'].to_i
             }
-            Mapattack.redis do |r|
-              r.hset GAME_ID_COIN_DATA_KEY % game.id, coin_trigger.trigger_id, coin_data.to_json
-            end
+            redis.hset GAME_ID_COIN_DATA_KEY % game.id, coin_trigger.trigger_id, coin_data.to_json
           end
 
           # add device to game
@@ -98,16 +96,14 @@ module Mapattack::Webserver::Game
         require_game_id
         with_device_gt_session do
 
-          board = Mapattack::Board.for @game
+          board = Board.for @game
           @game.activate!
 
           data = @gt.post 'trigger/update', tags: COIN_BOARD_ID_KEY % board.id,
                                             addTags: GAME_ID_TAG % @game.id,
                                             action: {callbackUrl: CONFIG[:callback_url]}
 
-          Mapattack.redis do |r|
-            r.publish GAME_ID_KEY % @game.id, {type: GAME_START_EVENT, game_id: @game.id}.to_json
-          end
+          redis.publish GAME_ID_KEY % @game.id, {type: GAME_START_EVENT, game_id: @game.id}.to_json
 
           { game_id: @game.id, num_coins: data['triggers'].length }
         end
@@ -117,7 +113,7 @@ module Mapattack::Webserver::Game
         require_game_id
         with_device_gt_session do
 
-          device = Mapattack::Device.new id: @gt.device_data['deviceId'], gt_session: @gt
+          device = Device.new id: @gt.device_data['deviceId'], gt_session: @gt
           team = device.choose_team_for @game
           device.set_game_tag @game
           device.set_active_game @game
@@ -128,9 +124,7 @@ module Mapattack::Webserver::Game
             team: team,
             device_id: device.id
           }
-          Mapattack.redis do |r|
-            r.publish GAME_ID_KEY % @game.id, join_event
-          end
+          redis.publish GAME_ID_KEY % @game.id, join_event
 
           { game_id: @game.id, team: team }
         end
@@ -147,8 +141,8 @@ module Mapattack::Webserver::Game
 
         # populate coins and set scores
         #
-        coin_data = Mapattack::Coin.data_for @game
-        coin_states = Mapattack::Coin.states_for @game
+        coin_data = Coin.data_for @game
+        coin_states = Coin.states_for @game
 
         coins = coin_data.map do |coin_id, coin|
           coin = JSON.parse coin
@@ -177,14 +171,13 @@ module Mapattack::Webserver::Game
         # get all player data
         #
         all_player_data = {}
-        pd = Mapattack.redis do |r|
-          r.multi do
-            device_ids.each do |did|
-              r.get DEVICE_LOCATION_ID_KEY % did
-              r.get DEVICE_PROFILE_ID_KEY % did
-            end
+        pd = redis.multi do |r|
+          device_ids.each do |did|
+            r.get DEVICE_LOCATION_ID_KEY % did
+            r.get DEVICE_PROFILE_ID_KEY % did
           end
         end
+
         device_ids.each_with_index do |did, i|
           all_player_data[did] = {
             location: JSON.parse(pd[i*2]),
@@ -195,11 +188,10 @@ module Mapattack::Webserver::Game
         # get all scores
         #
         all_scores = {}
-        as = Mapattack.redis do |r|
-          r.hgetall GAME_ID_BLUE_KEY % @game.id
-          r.hgetall GAME_ID_RED_KEY % @game.id
-        end
-        as.each do |scores|
+        redis.multi([
+          [:hgetall, GAME_ID_BLUE_KEY % @game.id],
+          [:hgetall, GAME_ID_RED_KEY % @game.id]
+        ]).each do |scores|
           scores.each do |did, score|
             if m = DEVICE_ID_REGEX.match(did)
               all_scores[m[1]] = score.to_i
@@ -259,19 +251,13 @@ module Mapattack::Webserver::Game
       # ---
 
       def game_stats_for game_id
-
-        # futures for pipeline
-        rs, rp, bs, bp, a = nil, nil, nil, nil, false
-
-        Mapattack.redis do |r|
-          r.pipelined do
-            rs = r.hvals GAME_ID_RED_KEY % game_id
-            rp = r.scard GAME_ID_RED_MEMBERS_KEY % game_id
-            bs = r.hvals GAME_ID_BLUE_KEY % game_id
-            bp = r.scard GAME_ID_BLUE_MEMBERS_KEY % game_id
-            a = r.get GAME_ID_ACTIVE_KEY % game_id
-          end
-        end
+        rs, rp, bs, bp, a = redis.pipelined [
+          [:hvals, GAME_ID_RED_KEY % game_id],
+          [:scard, GAME_ID_RED_MEMBERS_KEY % game_id],
+          [:hvals, GAME_ID_BLUE_KEY % game_id],
+          [:scard, GAME_ID_BLUE_MEMBERS_KEY % game_id],
+          [:get, GAME_ID_ACTIVE_KEY % game_id]
+        ]
 
         {
           red: {

@@ -1,4 +1,4 @@
-module Mapattack::Webserver::Board
+module Mapattack::Webserver::BoardRoutes
   def self.included base
     base.class_eval do
 
@@ -32,7 +32,7 @@ module Mapattack::Webserver::Board
             # find the id of the board by parsing the 'board:xxx' tag
             #
             match = nil
-            trigger.data['tags'].detect {|t| match = Mapattack::BOARD_ID_REGEX.match t}
+            trigger.data['tags'].detect {|t| match = BOARD_ID_REGEX.match t}
             board_id = match[1] unless match.nil?
             next unless board_id
 
@@ -120,7 +120,7 @@ module Mapattack::Webserver::Board
 
           # if we have a game running, add the id to the state
           #
-          if game_id = Mapattack.redis {|r| r.get BOARD_ID_GAME_KEY % params[:board_id]}
+          if game_id = redis.get(BOARD_ID_GAME_KEY % params[:board_id])
             board[:game_id] = game_id
           end
 
