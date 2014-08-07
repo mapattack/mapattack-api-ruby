@@ -1,5 +1,5 @@
 module Mapattack
-  class Coin
+  class Coin < Model
 
     attr_accessor :game
 

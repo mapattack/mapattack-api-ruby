@@ -1,81 +1,81 @@
-module Mapattack::Webserver::BoardRoutes
+module Mapattack; class Webserver; module BoardRoutes
   def self.included base
     base.class_eval do
 
       # full list of available boards within 1km
       #
-      get '/board/list' do
+      # get '/board/list' do
+      post '/board/list' do
+        raise RequestError.new latitude: 'required' if params[:latitude].nil?
 
         boards = []
+        longitude = Float(params[:longitude])
+        latitude = Float(params[:latitude])
 
-        if !params[:latitude].nil?
+        # make a location point object
+        #
+        point = Terraformer::Point.new longitude, latitude
 
-          # make a location point object
+        # query geotrigger api for triggers with tag 'board' nearby
+        #
+        triggers = Mapattack.geotrigger.triggers tags: 'board',
+                                                 geo: {
+                                                   latitude: latitude,
+                                                   longitude: longitude,
+                                                   distance: 1000
+                                                 }
+        triggers.each do |trigger|
+
+          # make the polygon object and determine closest point on it to location
           #
-          point = Terraformer::Point.new params[:longitude], params[:latitude]
+          polygon = Terraformer.parse trigger.condition['geo']['geojson']
 
-          # query geotrigger api for triggers with tag 'board' nearby
+          # find the id of the board by parsing the 'board:xxx' tag
           #
-          Mapattack.geotrigger.triggers({
-            tags: 'board',
-            geo: {
-              latitude: params[:latitude],
-              longitude: params[:longitude],
-              distance: 1000
-            }
-          }).each do |trigger|
+          match = nil
+          trigger.data['tags'].detect {|t| match = BOARD_ID_REGEX.match t}
+          board_id = match[1] unless match.nil?
+          next unless board_id
 
-            # make the polygon object and determine closest point on it to location
-            #
-            polygon = Terraformer.parse trigger.condition['geo']['geojson']
+          # board data
+          #
+          dist = point.distance_to(polygon)
+          binding.pry
+          board = {
+            board_id: board_id,
+            name: trigger.properties['title'] || "Untitled Board",
+            distance: dist,
+            bbox: polygon.bbox
+          }
 
-            # find the id of the board by parsing the 'board:xxx' tag
-            #
-            match = nil
-            trigger.data['tags'].detect {|t| match = BOARD_ID_REGEX.match t}
-            board_id = match[1] unless match.nil?
-            next unless board_id
+          # search redis for a currently running game
+          #
+          if game_id = redis.get(BOARD_ID_GAME_KEY % board_id)
 
-            # board data
-            #
-            board = {
-              board_id: board_id,
-              name: trigger.properties['title'] || "Untitled Board",
-              distance: point.distance_to(polygon),
-              bbox: polygon.bbox
-            }
-
-            # search redis for a currently running game
-            #
-            if game_id = redis.get(BOARD_ID_GAME_KEY % board_id)
-
-              stats = redis.multi do |r|
-                r.hvals GAME_ID_RED_KEY % game_id
-                r.scard GAME_ID_RED_MEMBERS_KEY % game_id
-                r.hvals GAME_ID_BLUE_KEY % game_id
-                r.scard GAME_ID_BLUE_MEMBERS_KEY % game_id
-                r.get GAME_ID_ACTIVE_KEY % game_id
-              end
-
-              board[:game] = {
-                game_id: game_id,
-                red_team: {
-                  score: stats[0].reduce(0){|sum, points| sum += points},
-                  num_players: stats[1]
-                },
-                blue_team: {
-                  score: stats[2].reduce(0){|sum, points| sum += points},
-                  num_players: stats[3]
-                },
-                active: (stats[4] == 1)
-              }
-
+            stats = redis.multi do |r|
+              r.hvals GAME_ID_RED_KEY % game_id
+              r.scard GAME_ID_RED_MEMBERS_KEY % game_id
+              r.hvals GAME_ID_BLUE_KEY % game_id
+              r.scard GAME_ID_BLUE_MEMBERS_KEY % game_id
+              r.get GAME_ID_ACTIVE_KEY % game_id
             end
 
-            boards << board
+            board[:game] = {
+              game_id: game_id,
+              red_team: {
+                score: stats[0].reduce(0){|sum, points| sum += points},
+                num_players: stats[1]
+              },
+              blue_team: {
+                score: stats[2].reduce(0){|sum, points| sum += points},
+                num_players: stats[3]
+              },
+              active: (stats[4] == 1)
+            }
 
           end
 
+          boards << board
         end
 
         { boards: boards }
@@ -89,7 +89,8 @@ module Mapattack::Webserver::BoardRoutes
 
       # full state of the board with coins
       #
-      get '/board/state' do
+      # get '/board/state' do
+      post '/board/state' do
         with_device_gt_session do
 
           # app model, with session built from params[:access_token]
@@ -130,4 +131,4 @@ module Mapattack::Webserver::BoardRoutes
 
     end
   end
-end
+end; end; end

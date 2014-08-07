@@ -56,12 +56,13 @@ module Mapattack
 
   ID_POSSIBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
+  @@udp = UDP::Service.new
+
   class << self
 
-    @udp = UDP::Service.new
-
-    @arcgis = ArcGIS.new
-    attr_reader :arcgis
+    def arcgis
+      @arcgis ||= ArcGIS.new
+    end
 
     def redis &block
       @redis ||= ConnectionPool.new REDIS_POOL_CONF do

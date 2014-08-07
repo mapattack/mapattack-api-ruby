@@ -1,8 +1,9 @@
-module Mapattack::Webserver::GameRoutes
+module Mapattack; class Webserver; module GameRoutes
   def self.included base
     base.class_eval do
 
-      get '/game/list' do
+      # get '/game/list' do
+      post '/game/list' do
 
         games = []
         user_location = params[:longitude] ? Terraformer::Point.new(params[:longitude], params[:latitude]) : nil
@@ -130,7 +131,8 @@ module Mapattack::Webserver::GameRoutes
         end
       end
 
-      get '/game/state' do
+      # get '/game/state' do
+      post '/game/state' do
         require_game_id
         game_data = @game.data
 
@@ -274,4 +276,4 @@ module Mapattack::Webserver::GameRoutes
 
     end
   end
-end
+end; end; end

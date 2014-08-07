@@ -1,4 +1,4 @@
-module Mapattack::Webserver::DeviceRoutes
+module Mapattack; class Webserver; module DeviceRoutes
   def self.included base
     base.class_eval do
 
@@ -16,7 +16,7 @@ module Mapattack::Webserver::DeviceRoutes
 
           # get AGO oauth data from redis
           #
-          dts = JSON.parse redis.get(DEVICE_TOKENS_KEY % params[:access_token]) rescue nil
+          dts = JSON.parse(redis.get(DEVICE_TOKENS_KEY % params[:access_token])) rescue nil
 
           # if we have everything...
           #
@@ -39,7 +39,7 @@ module Mapattack::Webserver::DeviceRoutes
 
             # ain't nobody got time for that
             #
-            Device.create_new_ago_device
+            Device.create_new_ago_device params[:name], params[:avatar]
 
           end
 
@@ -52,7 +52,8 @@ module Mapattack::Webserver::DeviceRoutes
         end
       end
 
-      get '/device/info' do
+      # get '/device/info' do
+      post '/device/info' do
         require_access_token do
           {
             device_id: @ago_data[:device_id],
@@ -64,4 +65,4 @@ module Mapattack::Webserver::DeviceRoutes
 
     end
   end
-end
+end; end; end

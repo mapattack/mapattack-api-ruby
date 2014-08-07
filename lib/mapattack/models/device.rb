@@ -5,7 +5,7 @@ module Mapattack
 
     class << self
 
-      def create_new_ago_device
+      def create_new_ago_device name, avatar
 
         # create a new "access_token" to map to real AGO oauth data
         #
@@ -23,7 +23,7 @@ module Mapattack
 
         # save profile info
         #
-        Device.new(dts[:device_id]).set_profile
+        Device.new(id: dts[:device_id]).set_profile name, avatar
 
         # respond with id and "access_token"
         #
@@ -33,11 +33,6 @@ module Mapattack
         }
       end
 
-    end
-
-    def initialize opts = {}
-      super
-      self.gt_session = opts[:gt_session]
     end
 
     def team_for_game_id game
@@ -66,7 +61,7 @@ module Mapattack
     end
 
     def set_game_tag game
-      (gt_session || Mapattack.geotrigger).post 'device/update', setTags: GAME_ID_TAG % game.id
+      Mapattack.geotrigger.post 'device/update', setTags: GAME_ID_TAG % game.id
     end
 
     def active_game

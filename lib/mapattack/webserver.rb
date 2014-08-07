@@ -11,6 +11,9 @@ module Mapattack
     include BoardRoutes
     include GameRoutes
 
+    @@report_errors = true
+    @@log_level = Logger::DEBUG
+
     content_type :json
 
     websocket '/ws' do |s|
