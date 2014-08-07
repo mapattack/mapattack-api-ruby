@@ -7,7 +7,7 @@ gem 'celluloid-redis'
 gem 'http'
 gem 'angelo'
 gem 'geotrigger'
-gem 'terraformer', path: '/Users/ken/src/esri/terraformer-ruby'
+gem 'terraformer'
 
 gem 'pry'
 gem 'pry-nav'

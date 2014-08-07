@@ -18,13 +18,15 @@ module Mapattack; class Webserver; module BoardRoutes
 
         # query geotrigger api for triggers with tag 'board' nearby
         #
-        triggers = Mapattack.geotrigger.triggers tags: 'board',
-                                                 geo: {
-                                                   latitude: latitude,
-                                                   longitude: longitude,
-                                                   distance: 1000
-                                                 }
-        triggers.each do |trigger|
+        BigDecimal.limit Terraformer::PRECISION
+        Mapattack.geotrigger.triggers({
+          tags: 'board',
+          geo: {
+            latitude: latitude,
+            longitude: longitude,
+            distance: 1000
+          }
+        }).each do |trigger|
 
           # make the polygon object and determine closest point on it to location
           #
@@ -40,7 +42,6 @@ module Mapattack; class Webserver; module BoardRoutes
           # board data
           #
           dist = point.distance_to(polygon)
-          binding.pry
           board = {
             board_id: board_id,
             name: trigger.properties['title'] || "Untitled Board",
