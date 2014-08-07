@@ -7,9 +7,6 @@ Bundler.require
 
 $:.unshift File.expand_path '..', __FILE__
 
-require 'mapattack/udp/service'
-require 'mapattack/arcgis'
-
 module Mapattack
 
   BOARD_ID_REGEX = /^board:([^:]+)$/
@@ -35,11 +32,13 @@ module Mapattack
   GAME_ID_COIN_DATA_KEY =    'game:%s:coin_data'
   GAME_ID_COINS_KEY =        'game:%s:coins'
 
+  DEVICE_ID_KEY =            'device:%s'
   DEVICE_PROFILE_ID_KEY =    'device:profile:%s'
   DEVICE_TEAM_KEY =          'device:team:%s'
   DEVICE_ACTIVE_GAME_KEY =   'device:active_game:%s'
   DEVICE_TOKENS_KEY =        'device:tokens:%s'
   DEVICE_LOCATION_ID_KEY =   'device:location:%s'
+  DEVICE_UDP_ID_KEY =        'device:udp:%s'
 
   BOARD_TAG =   'board'
   GAME_ID_TAG = 'game:%s'
@@ -56,9 +55,9 @@ module Mapattack
 
   ID_POSSIBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
-  @@udp = UDP::Service.new
-
   class << self
+
+    attr_accessor :udp
 
     def arcgis
       @arcgis ||= ArcGIS.new
@@ -66,7 +65,7 @@ module Mapattack
 
     def redis &block
       @redis ||= ConnectionPool.new REDIS_POOL_CONF do
-        Redis.new driver: :celluloid
+        Redis.new driver: :celluloid, host: CONFIG[:redis_host], port: CONFIG[:redis_port]
       end
       @redis.with &block
     end
@@ -136,6 +135,7 @@ module Mapattack
 
 end
 
+require 'mapattack/arcgis'
 require 'mapattack/models/model'
 require 'mapattack/models/game'
 require 'mapattack/models/board'
@@ -143,5 +143,7 @@ require 'mapattack/models/coin'
 require 'mapattack/models/device'
 require 'mapattack/webserver/helpers'
 require 'mapattack/webserver'
+require 'mapattack/udp/service'
 
+Mapattack.udp = Mapattack::UDP::Service.new
 Mapattack::Webserver.run unless $0 == 'irb'

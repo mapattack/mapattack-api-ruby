@@ -6,7 +6,7 @@ module Mapattack
       def for obj
         case obj
         when Game
-          self.class.new id: redis.get(GAME_ID_BOARD_KEY % obj.id)
+          Board.new id: redis.get(GAME_ID_BOARD_KEY % obj.id)
         when Device
           raise NotImplementedError
         end

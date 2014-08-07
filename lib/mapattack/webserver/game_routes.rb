@@ -61,13 +61,12 @@ module Mapattack; class Webserver; module GameRoutes
           board_trigger = a.triggers(tags: [BOARD_ID_KEY % board_id]).first
           board_polygon = Terraformer.parse board_trigger.condition['geo']['geojson']
 
-          device_profile = JSON.parse redis.get DEVICE_PROFILE_ID_KEY % device_id
           game_data = {
             name: board_trigger.properties['title'],
             bbox: board_polygon.bbox,
             creator: {
               device_id: device.id,
-              name: device_profile['name']
+              name: device.profile['name']
             }
           }
           redis.set GAME_ID_DATA_KEY % game.id, game_data.to_json
@@ -182,7 +181,7 @@ module Mapattack; class Webserver; module GameRoutes
 
         device_ids.each_with_index do |did, i|
           all_player_data[did] = {
-            location: JSON.parse(pd[i*2]),
+            location: pd[i*2] ? JSON.parse(pd[i*2]) : nil,
             profile: JSON.parse(pd[i*2+1])
           }
         end
@@ -210,7 +209,11 @@ module Mapattack; class Webserver; module GameRoutes
             }
             red_players += 1 if team == :red
             blue_players += 1 if team == :blue
-            p.merge! l if all_player_data[did] && l = all_player_data[did][:location]
+
+            if all_player_data[did] && l = all_player_data[did][:location]
+              p.merge! l
+            end
+
             if all_player_data[did][:profile] && n = all_player_data[did][:profile]['name']
               p[:name] = n
             else

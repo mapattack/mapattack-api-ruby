@@ -19,15 +19,19 @@ module Mapattack
 
     def with_device_gt_session &block
       require_access_token do
-        @gt = Geotrigger::Session.new client_id: CONFIG[:ago_client_id], type: :device
-        @gt.access_token = params[:access_token]
-        yield
+        @gt = Geotrigger::Session.new client_id: CONFIG[:ago_client_id],
+                                      type: :device,
+                                      refresh_token: @ago_data[:refresh_token]
+        response = yield
+        @ago_data[:access_token] = @gt.access_token
+        redis.set DEVICE_TOKENS_KEY % params[:access_token], @ago_data.to_json
+        response
       end
     end
 
     def require_game_id
       raise RequestError.new game_id: 'required' if params[:game_id].nil? or params[:game_id].empty?
-      @game = Mapattack::Game.new params[:game_id]
+      @game = Mapattack::Game.new id: params[:game_id]
     end
 
   end

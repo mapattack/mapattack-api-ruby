@@ -6,7 +6,7 @@ module Mapattack
     def initialize opts = {}
       super
       self.board = opts[:board]
-      self.id ||= Mapattack.generate_id
+      self.id ||= Mapattack.generate_id 16
     end
 
     def team_counts
@@ -26,7 +26,7 @@ module Mapattack
     end
 
     def players
-      ps = r.multi [
+      ps = redis.multi [
         [:smembers, GAME_ID_RED_MEMBERS_KEY % id],
         [:smembers, GAME_ID_BLUE_MEMBERS_KEY % id]
       ]

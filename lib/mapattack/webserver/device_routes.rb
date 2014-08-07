@@ -50,6 +50,7 @@ module Mapattack; class Webserver; module DeviceRoutes
         require_access_token do
           Mapattack.arcgis.async.update @ago_data, params
         end
+        {}
       end
 
       # get '/device/info' do
