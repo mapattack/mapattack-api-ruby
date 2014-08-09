@@ -40,10 +40,10 @@ module Mapattack
         if vals = device.active_game
           game = Game.new id: vals[:game_id]
 
-          if coin_owner = redis.hget GAME_ID_COINS_KEY % vals[:game_id], coin_id
+          if coin_owner = redis.hget(GAME_ID_COINS_KEY % vals[:game_id], coin_id)
             {error: 'coin already claimed'}
           else
-            if team = device.team_for game
+            if team = device.team_for(game)
 
               debug "setting coin ownership for #{team}"
               message[:team] = team
@@ -72,8 +72,8 @@ module Mapattack
 
     @@game_ws = {}
 
-    websocket '/:game_id' do |ws|
-      websockets << ws
+    websocket '/viewer/:game_id' do |ws|
+      websockets[params[:game_id].to_sym] << ws
       async :game_ws, params[:game_id] unless @@game_ws[params[:game_id]]
     end
 
@@ -81,10 +81,11 @@ module Mapattack
       @@game_ws[game_id] = true
       r = ::Redis.new driver: :celluloid, host: CONFIG[:redis_host], port: CONFIG[:redis_port]
       catch :done do
+        gids = game_id.to_sym
         r.subscribe GAME_ID_KEY % game_id do |on|
           on.message do |channel, msg|
-            websockets.each {|ws| ws.write msg}
-            throw :done if JSON.parse(msg)['type'] == 'game_end'
+            websockets[gids].each {|ws| ws.write msg}
+            throw :done if JSON.parse(msg)['type'] == 'game_end' or websockets[gids].length == 0
           end
         end
       end

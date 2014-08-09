@@ -8,6 +8,7 @@ gem 'http'
 gem 'angelo'
 gem 'geotrigger'
 gem 'terraformer'
+gem 'mustermann'
 
 gem 'pry'
 gem 'pry-nav'

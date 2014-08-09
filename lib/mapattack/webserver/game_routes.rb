@@ -31,7 +31,7 @@ module Mapattack; class Webserver; module GameRoutes
 
             board[:distance] = user_location.distance_to geo if user_location
             if game_id = redis.get(BOARD_ID_GAME_KEY % board_id)
-              games << game_stats_for(game_id)
+              games << Game.new(id: game_id).stats
             end
           end
 
@@ -267,33 +267,50 @@ module Mapattack; class Webserver; module GameRoutes
 
         Mapattack.geotrigger.post 'device/update', tags: game_tag, removeTags: game_tag
         Mapattack.geotrigger.post 'trigger/update', tags: game_tag, removeTags: game_tag
-        Mapattack.redis.publish game_tag, {type: 'game_end', game_id: game.id}.to_json
+        redis.publish game_tag, {type: 'game_end', game_id: game.id}.to_json
 
         {result: 'ended'}
       end
 
-      # ---
+      get '/game/list' do
 
-      def game_stats_for game_id
-        rs, rp, bs, bp, a = redis.pipelined [
-          [:hvals, GAME_ID_RED_KEY % game_id],
-          [:scard, GAME_ID_RED_MEMBERS_KEY % game_id],
-          [:hvals, GAME_ID_BLUE_KEY % game_id],
-          [:scard, GAME_ID_BLUE_MEMBERS_KEY % game_id],
-          [:get, GAME_ID_ACTIVE_KEY % game_id]
-        ]
+        # user location?
+        ul = Terraformer::Point.new params[:longitude], params[:latitude] if params[:longitude]
 
-        {
-          red: {
-            score: rs.value.reduce(0, &:+),
-            num_players: rp.value
-          },
-          blue: {
-            score: bs.value.reduce(0, &:+),
-            num_players: bp.value
-          },
-          active: a.value == 1
-        }
+        games = []
+
+        triggers = Mapattack.geotrigger.post('trigger/list', tags: ['board'])['triggers']
+        triggers.each do |t|
+
+          shape = case
+                  when t['condition']['geo']['geojson']
+                    Terraformer.parse t['condition']['geo']['geojson']
+                  when t['condition']['geo']['distance']
+                    geo = t['condition']['geo']
+                    Terraformer::Circle.new([
+                      t['condition']['geo']['longitude'],
+                      t['condition']['geo']['latitude']
+                    ], t['condition']['geo']['distance']).polygon
+                  end
+
+          board_id = Mapattack.ids_for( 'board', *t['tags']).first
+          board = {
+            board_id: board_id,
+            name: t['properties']['title'] || 'Untitled Board',
+            bbox: (shape.bbox rescue nil)
+          }
+          board[:distance] = ul.distance_to(shape) if ul and shape
+
+          game_id = redis.get BOARD_ID_GAME_KEY % board_id
+
+          if game_id
+            board[:game] = Game.new(id: game_id).stats
+            games << board
+          end
+
+        end
+
+        {games: games}
       end
 
     end

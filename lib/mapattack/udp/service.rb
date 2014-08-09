@@ -31,6 +31,7 @@ module Mapattack
         BigDecimal.limit BigDecimal.double_fig
 
         data = JSON.parse data
+        # debug "udp data: #{data}"
         lu = build_location_update data
 
         with_device_gt_session access_token: data['access_token'] do |ago_data, gt|
@@ -162,6 +163,5 @@ module Mapattack
       end
 
     end
-
   end
 end

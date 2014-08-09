@@ -13,6 +13,7 @@ module Mapattack
   GAME_ID_REGEX = /^game:([^:]+)$/
   COIN_ID_REGEX = /^coin:([^:]+)$/
   DEVICE_ID_REGEX = /^device:([^:]+)$/
+  TAG_ID_REGEX_KEY = '^%s:([^:]+$)'
 
   BOARD_ID_KEY =             'board:%s'
   BOARD_ID_GAME_KEY =        'board:%s:game'
@@ -77,6 +78,15 @@ module Mapattack
 
     def generate_id length
       Array.new(length).map {ID_POSSIBLE[rand ID_POSSIBLE.length]}.join
+    end
+
+    def ids_for tag, *tags
+      re = Regexp.new TAG_ID_REGEX_KEY % tag
+      tags.flatten.map do |t|
+        if m = re.match(t)
+          m[1]
+        end
+      end.compact!
     end
 
   end
@@ -145,5 +155,7 @@ require 'mapattack/webserver/helpers'
 require 'mapattack/webserver'
 require 'mapattack/udp/service'
 
-Mapattack.udp = Mapattack::UDP::Service.new
-Mapattack::Webserver.run unless $0 == 'irb'
+unless $0 == 'irb'
+  Mapattack.udp = Mapattack::UDP::Service.new
+  Mapattack::Webserver.run
+end

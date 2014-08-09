@@ -52,37 +52,8 @@ module Mapattack; class Webserver; module BoardRoutes
           # search redis for a currently running game
           #
           if game_id = redis.get(BOARD_ID_GAME_KEY % board_id)
-
-            stats = redis.multi do |r|
-              r.hvals GAME_ID_RED_KEY % game_id
-              r.scard GAME_ID_RED_MEMBERS_KEY % game_id
-              r.hvals GAME_ID_BLUE_KEY % game_id
-              r.scard GAME_ID_BLUE_MEMBERS_KEY % game_id
-              r.get GAME_ID_ACTIVE_KEY % game_id
-            end
-
-            # board[:game] = {
-            #   game_id: game_id,
-            #   red_team: {
-            #     score: stats[0].reduce(0){|sum, points| sum += points},
-            #     num_players: stats[1]
-            #   },
-            #   blue_team: {
-            #     score: stats[2].reduce(0){|sum, points| sum += points},
-            #     num_players: stats[3]
-            #   },
-            #   active: (stats[4] == 1)
-            # }
-
-            board[:game] = {
-              game_id: game_id,
-              red_team: stats[1],
-              red_score: stats[0].reduce(0){|sum, points| sum += points},
-              blue_team: stats[3],
-              blue_score: stats[2].reduce(0){|sum, points| sum += points},
-              active: (stats[4] == '1')
-            }
-
+            game = Game.new id: game_id
+            board[:game] = game.stats
           end
 
           boards << board
