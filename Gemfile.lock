@@ -1,7 +1,14 @@
+GIT
+  remote: git://github.com/rkh/mustermann.git
+  revision: c33eaf7a5ca887056b7ffae5392033ebdc10fd27
+  specs:
+    mustermann (0.3.0)
+      tool (~> 0.2)
+
 GEM
   remote: https://rubygems.org/
   specs:
-    angelo (0.1.16)
+    angelo (0.1.17)
       mime-types
       reel
     celluloid (0.16.0.pre3)
@@ -23,7 +30,6 @@ GEM
     httpclient (2.4.0)
     method_source (0.8.2)
     mime-types (2.3)
-    mustermann (0.2.0)
     nio4r (1.0.0)
     pry (0.10.0)
       coderay (~> 1.1.0)
@@ -42,6 +48,7 @@ GEM
     terraformer (0.0.7)
     timers (4.0.0)
       hitimes
+    tool (0.2.2)
     websocket_parser (0.1.6)
 
 PLATFORMS
@@ -55,7 +62,7 @@ DEPENDENCIES
   connection_pool
   geotrigger
   http
-  mustermann
+  mustermann!
   pry
   pry-nav
   terraformer

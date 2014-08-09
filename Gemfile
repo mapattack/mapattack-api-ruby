@@ -8,7 +8,7 @@ gem 'http'
 gem 'angelo'
 gem 'geotrigger'
 gem 'terraformer'
-gem 'mustermann'
+gem 'mustermann', github: 'rkh/mustermann'
 
 gem 'pry'
 gem 'pry-nav'

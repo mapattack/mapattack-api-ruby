@@ -157,5 +157,5 @@ require 'mapattack/udp/service'
 
 unless $0 == 'irb'
   Mapattack.udp = Mapattack::UDP::Service.new
-  Mapattack::Webserver.run
+  Mapattack::Webserver.run '0.0.0.0', Mapattack::CONFIG[:http_port]
 end

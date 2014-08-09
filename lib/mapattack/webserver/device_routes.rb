@@ -64,6 +64,17 @@ module Mapattack; class Webserver; module DeviceRoutes
         end
       end
 
+      get '/(avatar|user)/(?<device_id>.*).jpg', type: :regexp do
+        device = Device.new id: params[:device_id]
+        profile = device.profile
+        if profile and profile['avatar']
+          image = Base64.urlsafe_decode64 profile['avatar']
+          send_data image, filename: "#{params[:device_id]}.jpg"
+        else
+          halt 404
+        end
+      end
+
     end
   end
 end; end; end
