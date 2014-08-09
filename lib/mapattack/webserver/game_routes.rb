@@ -99,9 +99,11 @@ module Mapattack; class Webserver; module GameRoutes
           board = Board.for @game
           @game.activate!
 
+          debug "posting to trigger/update..."
           data = @gt.post 'trigger/update', tags: COIN_BOARD_ID_KEY % board.id,
                                             addTags: GAME_ID_TAG % @game.id,
                                             action: {callbackUrl: CONFIG[:callback_url]}
+          debug "done trigger/update."
 
           redis.publish GAME_ID_KEY % @game.id, {type: GAME_START_EVENT, game_id: @game.id}.to_json
 
@@ -116,7 +118,7 @@ module Mapattack; class Webserver; module GameRoutes
           device = Device.new id: @gt.device_data['deviceId'], gt_session: @gt
           team = device.choose_team_for @game
           device.set_game_tag @game
-          device.set_active_game @game
+          device.set_active_game @game, team
 
           join_event = {
             type: PLAYER_JOIN_EVENT,
@@ -124,7 +126,7 @@ module Mapattack; class Webserver; module GameRoutes
             team: team,
             device_id: device.id
           }
-          redis.publish GAME_ID_KEY % @game.id, join_event
+          redis.publish GAME_ID_KEY % @game.id, join_event.to_json
 
           { game_id: @game.id, team: team }
         end
@@ -251,6 +253,23 @@ module Mapattack; class Webserver; module GameRoutes
           coins: coins,
           players: players
         }
+      end
+
+      post '/game/end' do
+        game = Game.new id: params[:game_id]
+        board = Board.for game
+        redis.multi do |r|
+          r.del BOARD_ID_GAME_KEY % board.id
+          r.del GAME_ID_ACTIVE_KEY % game.id
+        end
+
+        game_tag = GAME_ID_KEY % game.id
+
+        Mapattack.geotrigger.post 'device/update', tags: game_tag, removeTags: game_tag
+        Mapattack.geotrigger.post 'trigger/update', tags: game_tag, removeTags: game_tag
+        Mapattack.redis.publish game_tag, {type: 'game_end', game_id: game.id}.to_json
+
+        {result: 'ended'}
       end
 
       # ---

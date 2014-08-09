@@ -28,6 +28,7 @@ module Mapattack
       end
 
       def handle_data data, server_inet_addr
+        BigDecimal.limit BigDecimal.double_fig
 
         data = JSON.parse data
         lu = build_location_update data
@@ -58,9 +59,9 @@ module Mapattack
           end
 
           if send_to_geotrigger
-            debug "sending location update! distance was #{distance}"
+            debug "sending location update! distance was #{distance}, BigDecimal.limit is #{BigDecimal.limit}"
             gt.post 'location/update', lu
-            device.set_location lu[:locations][0] if previous and previous['timestamp'] < lu[:locations][0][:timestamp]
+            device.set_location lu[:locations][0] if previous.nil? or previous['timestamp'] < lu[:locations][0][:timestamp]
           else
             debug "NOT sending location update! distance was #{distance}"
           end
@@ -105,21 +106,28 @@ module Mapattack
       def listen_to_game id
         @@game_listeners[id] = true
         game = Game.new id: id
+        r = ::Redis.new driver: :celluloid, host: CONFIG[:redis_host], port: CONFIG[:redis_port]
         catch :done do
-          r = ::Redis.new driver: :celluloid, host: CONFIG[:redis_host], port: CONFIG[:redis_port]
           r.subscribe GAME_ID_KEY % id do |on|
             on.message do |channel, msg|
               teams = game.players
               all_players = teams[:red] + teams[:blue]
               all_players.each do |device_id|
                 d = Device.new id: device_id
-                ui = d.udp_info
-                @socket.send msg, 0, ui[:address], ui[:port]
+                if ui = d.udp_info
+                  begin
+                    debug "sending udp to #{ui['address']}:#{ui['port']}"
+                    @socket.send msg, 0, ui['address'], ui['port']
+                  rescue => e
+                    warn "error sending udp: #{e.message}"
+                  end
+                end
               end
               throw :done if JSON.parse(msg)['type'] == 'game_end'
             end
           end
         end
+        r.quit
         @@game_listeners[id] = false
       end
 

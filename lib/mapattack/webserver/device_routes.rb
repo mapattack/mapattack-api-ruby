@@ -10,7 +10,7 @@ module Mapattack; class Webserver; module DeviceRoutes
 
           # create token, register device, stash in redis
           #
-          Device.create_new_ago_device
+          Device.create_new_ago_device params[:name], params[:avatar]
 
         else
 

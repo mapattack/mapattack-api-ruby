@@ -34,7 +34,18 @@ module Mapattack
     end
 
     def active?
-      redis.get(GAME_ID_ACTIVE_KEY % id) == 1
+      redis.get(GAME_ID_ACTIVE_KEY % id) == '1'
+    end
+
+    def scores_for device
+      ag = device.active_game
+      rs = redis.multi [
+        [:hvals, GAME_ID_RED_KEY % ag[:game_id]],
+        [:hvals, GAME_ID_BLUE_KEY % ag[:game_id]]
+      ]
+      { player_score: ag[:device_score],
+        red_score: rs[0].reduce(:+),
+        blue_score: rs[1].reduce(:+) }
     end
 
   end

@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    angelo (0.1.15)
+    angelo (0.1.16)
       mime-types
       reel
     celluloid (0.16.0.pre3)

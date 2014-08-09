@@ -61,17 +61,26 @@ module Mapattack; class Webserver; module BoardRoutes
               r.get GAME_ID_ACTIVE_KEY % game_id
             end
 
+            # board[:game] = {
+            #   game_id: game_id,
+            #   red_team: {
+            #     score: stats[0].reduce(0){|sum, points| sum += points},
+            #     num_players: stats[1]
+            #   },
+            #   blue_team: {
+            #     score: stats[2].reduce(0){|sum, points| sum += points},
+            #     num_players: stats[3]
+            #   },
+            #   active: (stats[4] == 1)
+            # }
+
             board[:game] = {
               game_id: game_id,
-              red_team: {
-                score: stats[0].reduce(0){|sum, points| sum += points},
-                num_players: stats[1]
-              },
-              blue_team: {
-                score: stats[2].reduce(0){|sum, points| sum += points},
-                num_players: stats[3]
-              },
-              active: (stats[4] == 1)
+              red_team: stats[1],
+              red_score: stats[0].reduce(0){|sum, points| sum += points},
+              blue_team: stats[3],
+              blue_score: stats[2].reduce(0){|sum, points| sum += points},
+              active: (stats[4] == '1')
             }
 
           end
