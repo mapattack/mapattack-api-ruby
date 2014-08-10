@@ -44,8 +44,8 @@ module Mapattack
         [:hvals, GAME_ID_BLUE_KEY % ag[:game_id]]
       ]
       { player_score: ag[:device_score],
-        red_score: rs[0].reduce(:+),
-        blue_score: rs[1].reduce(:+) }
+        red_score: rs[0].reduce(0, &:+),
+        blue_score: rs[1].reduce(0, &:+) }
     end
 
     def stats
