@@ -43,7 +43,7 @@ module Mapattack
           if coin_owner = redis.hget(GAME_ID_COINS_KEY % vals[:game_id], coin_id)
             {error: 'coin already claimed'}
           else
-            if team = device.team_for(game)
+            if team = device.team_for_game(game)
 
               debug "setting coin ownership for #{team}"
               message[:team] = team
