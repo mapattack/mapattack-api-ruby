@@ -22,7 +22,7 @@ module Mapattack
     end
 
     def data
-      JSON.parse redis.get GAME_ID_DATA_KEY % id
+      JSON.parse redis.get GAME_ID_DATA_KEY % id rescue nil
     end
 
     def players
@@ -82,9 +82,9 @@ module Mapattack
       {
         game_id: id,
         red_team: s[1].value,
-        red_score: s[0].value.reduce(0, &:+),
+        red_score: s[0].value.map(&:to_i).reduce(0, &:+),
         blue_team: s[3].value,
-        blue_score: s[2].value.reduce(0, &:+),
+        blue_score: s[2].value.map(&:to_i).reduce(0, &:+),
         active: (s[4].value == '1')
       }
     end

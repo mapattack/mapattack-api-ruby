@@ -136,6 +136,7 @@ module Mapattack; class Webserver; module GameRoutes
       post '/game/state' do
         require_game_id
         game_data = @game.data
+        raise RequestError.new game: "no data!" unless game_data
 
         red_score = 0
         blue_score = 0

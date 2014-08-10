@@ -68,7 +68,13 @@ module Mapattack; class Webserver; module DeviceRoutes
         device = Device.new id: params[:device_id]
         profile = device.profile
         if profile and profile['avatar']
-          image = Base64.urlsafe_decode64 profile['avatar']
+          image = nil
+          begin
+            image = Base64.urlsafe_decode64 profile['avatar']
+          rescue => e
+            warn e.message
+            halt 404
+          end
           send_data image, filename: "#{params[:device_id]}.jpg"
         else
           halt 404
